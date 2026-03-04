@@ -22,6 +22,9 @@ class ML_Admin_Menu {
 	public static function register(): void {
 		add_action( 'admin_menu', array( self::class, 'register_menu' ) );
 		add_action( 'admin_post_ml_save_match_editor', array( ML_Admin_Screens::class, 'handle_match_editor_save' ) );
+		add_action( 'admin_post_ml_import_csv', array( ML_Admin_Screens::class, 'handle_import_csv' ) );
+		add_action( 'admin_post_ml_export_csv', array( ML_Admin_Screens::class, 'handle_export_csv' ) );
+		add_action( 'admin_post_ml_import_errors_csv', array( ML_Admin_Screens::class, 'handle_import_errors_csv' ) );
 	}
 
 	/**

@@ -76,10 +76,109 @@ class ML_Admin_Screens {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
 		}
 
-		self::render_placeholder_screen(
-			__( 'Import / Export', 'mahl-league' ),
-			__( 'CSV import and export tools will be available in Phase 7.', 'mahl-league' )
+		$seasons = get_terms(
+			array(
+				'taxonomy'   => 'ml_season',
+				'hide_empty' => false,
+			)
 		);
+
+		$competitions = get_terms(
+			array(
+				'taxonomy'   => 'ml_competition',
+				'hide_empty' => false,
+			)
+		);
+
+		$teams = get_posts(
+			array(
+				'post_type'      => 'ml_team',
+				'post_status'    => array( 'publish', 'draft' ),
+				'posts_per_page' => 300,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html__( 'Import / Export', 'mahl-league' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Secure CSV tools for Teams, Players and Matches.', 'mahl-league' ) . '</p>';
+
+		self::render_import_notices();
+
+		echo '<hr />';
+		echo '<h2>' . esc_html__( 'Import CSV', 'mahl-league' ) . '</h2>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" enctype="multipart/form-data">';
+		echo '<input type="hidden" name="action" value="ml_import_csv" />';
+		wp_nonce_field( 'ml_import_csv', 'ml_import_csv_nonce' );
+
+		echo '<table class="form-table" role="presentation"><tbody>';
+		echo '<tr><th scope="row"><label for="ml-import-entity">' . esc_html__( 'Entity', 'mahl-league' ) . '</label></th>';
+		echo '<td><select id="ml-import-entity" name="entity" required>';
+		echo '<option value="teams">' . esc_html__( 'Teams', 'mahl-league' ) . '</option>';
+		echo '<option value="players">' . esc_html__( 'Players', 'mahl-league' ) . '</option>';
+		echo '<option value="matches">' . esc_html__( 'Matches', 'mahl-league' ) . '</option>';
+		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="ml-import-file">' . esc_html__( 'CSV File', 'mahl-league' ) . '</label></th>';
+		echo '<td><input type="file" id="ml-import-file" name="import_file" accept=".csv,text/csv" required /></td></tr>';
+
+		echo '<tr><th scope="row"><label for="ml-import-dry-run">' . esc_html__( 'Dry Run', 'mahl-league' ) . '</label></th>';
+		echo '<td><label><input type="checkbox" id="ml-import-dry-run" name="dry_run" value="1" /> ' . esc_html__( 'Dry run (validate only, no changes)', 'mahl-league' ) . '</label></td></tr>';
+		echo '</tbody></table>';
+
+		submit_button( __( 'Import CSV', 'mahl-league' ) );
+		echo '</form>';
+
+		echo '<p><strong>' . esc_html__( 'Sample CSV files:', 'mahl-league' ) . '</strong> ';
+		echo '<a href="' . esc_url( self::build_sample_export_link( 'teams' ) ) . '">' . esc_html__( 'Teams', 'mahl-league' ) . '</a> | ';
+		echo '<a href="' . esc_url( self::build_sample_export_link( 'players' ) ) . '">' . esc_html__( 'Players', 'mahl-league' ) . '</a> | ';
+		echo '<a href="' . esc_url( self::build_sample_export_link( 'matches' ) ) . '">' . esc_html__( 'Matches', 'mahl-league' ) . '</a>';
+		echo '</p>';
+
+		echo '<hr />';
+		echo '<h2>' . esc_html__( 'Export CSV', 'mahl-league' ) . '</h2>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="ml_export_csv" />';
+		wp_nonce_field( 'ml_export_csv', 'ml_export_csv_nonce' );
+
+		echo '<table class="form-table" role="presentation"><tbody>';
+		echo '<tr><th scope="row"><label for="ml-export-entity">' . esc_html__( 'Entity', 'mahl-league' ) . '</label></th>';
+		echo '<td><select id="ml-export-entity" name="entity">';
+		echo '<option value="teams">' . esc_html__( 'Teams', 'mahl-league' ) . '</option>';
+		echo '<option value="players">' . esc_html__( 'Players', 'mahl-league' ) . '</option>';
+		echo '<option value="matches">' . esc_html__( 'Matches', 'mahl-league' ) . '</option>';
+		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="ml-export-team-id">' . esc_html__( 'Team filter (players)', 'mahl-league' ) . '</label></th><td><select id="ml-export-team-id" name="team_id">';
+		echo '<option value="0">' . esc_html__( 'All teams', 'mahl-league' ) . '</option>';
+		foreach ( $teams as $team ) {
+			echo '<option value="' . esc_attr( (string) $team->ID ) . '">' . esc_html( $team->post_title ) . '</option>';
+		}
+		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="ml-export-season-id">' . esc_html__( 'Season filter (matches)', 'mahl-league' ) . '</label></th><td><select id="ml-export-season-id" name="season_id">';
+		echo '<option value="0">' . esc_html__( 'All seasons', 'mahl-league' ) . '</option>';
+		if ( is_array( $seasons ) ) {
+			foreach ( $seasons as $season ) {
+				echo '<option value="' . esc_attr( (string) $season->term_id ) . '">' . esc_html( $season->name ) . '</option>';
+			}
+		}
+		echo '</select></td></tr>';
+
+		echo '<tr><th scope="row"><label for="ml-export-competition-id">' . esc_html__( 'Competition filter (matches)', 'mahl-league' ) . '</label></th><td><select id="ml-export-competition-id" name="competition_id">';
+		echo '<option value="0">' . esc_html__( 'All competitions', 'mahl-league' ) . '</option>';
+		if ( is_array( $competitions ) ) {
+			foreach ( $competitions as $competition ) {
+				echo '<option value="' . esc_attr( (string) $competition->term_id ) . '">' . esc_html( $competition->name ) . '</option>';
+			}
+		}
+		echo '</select></td></tr>';
+		echo '</tbody></table>';
+
+		submit_button( __( 'Export CSV', 'mahl-league' ), 'secondary' );
+		echo '</form>';
+		echo '</div>';
 	}
 
 	/**
@@ -274,6 +373,140 @@ class ML_Admin_Screens {
 	}
 
 	/**
+	 * Handle CSV import action.
+	 *
+	 * @return void
+	 */
+	public static function handle_import_csv(): void {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+
+		check_admin_referer( 'ml_import_csv', 'ml_import_csv_nonce' );
+
+		$entity  = isset( $_POST['entity'] ) ? sanitize_key( wp_unslash( $_POST['entity'] ) ) : '';
+		$dry_run = isset( $_POST['dry_run'] ) && '1' === wp_unslash( $_POST['dry_run'] );
+		if ( ! in_array( $entity, array( 'teams', 'players', 'matches' ), true ) ) {
+			self::redirect_import_export( array( 'ml_message' => 'invalid_entity' ) );
+		}
+
+		if ( empty( $_FILES['import_file']['name'] ) ) {
+			self::redirect_import_export( array( 'ml_message' => 'missing_file' ) );
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		$upload = wp_handle_upload(
+			$_FILES['import_file'],
+			array(
+				'test_form' => false,
+				'mimes'     => array(
+					'csv' => 'text/csv',
+					'txt' => 'text/plain',
+				),
+			)
+		);
+
+		if ( isset( $upload['error'] ) ) {
+			self::redirect_import_export( array( 'ml_message' => 'upload_error' ) );
+		}
+
+		$result = ML_Import_Export_Service::import_csv( $entity, (string) $upload['file'], $dry_run );
+
+		$token = wp_generate_password( 20, false, false );
+		set_transient(
+			'ml_import_result_' . $token,
+			array(
+				'entity'  => $entity,
+				'dry_run' => $dry_run,
+				'result'  => $result,
+			),
+			15 * MINUTE_IN_SECONDS
+		);
+
+		self::redirect_import_export(
+			array(
+				'ml_import_result' => $token,
+			)
+		);
+	}
+
+	/**
+	 * Handle CSV export action.
+	 *
+	 * @return void
+	 */
+	public static function handle_export_csv(): void {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+
+		$is_sample = isset( $_GET['sample'] ) && '1' === wp_unslash( $_GET['sample'] );
+		if ( $is_sample ) {
+			if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ml_export_sample_csv' ) ) {
+				wp_die( esc_html__( 'Invalid sample download request.', 'mahl-league' ) );
+			}
+
+			$entity = isset( $_GET['entity'] ) ? sanitize_key( wp_unslash( $_GET['entity'] ) ) : '';
+			if ( ! in_array( $entity, array( 'teams', 'players', 'matches' ), true ) ) {
+				wp_die( esc_html__( 'Invalid export entity.', 'mahl-league' ) );
+			}
+
+			$rows = ML_Import_Export_Service::sample_rows( $entity );
+			self::send_csv_response( $entity . '-sample', $rows );
+		}
+
+		check_admin_referer( 'ml_export_csv', 'ml_export_csv_nonce' );
+
+		$entity = isset( $_POST['entity'] ) ? sanitize_key( wp_unslash( $_POST['entity'] ) ) : '';
+		if ( ! in_array( $entity, array( 'teams', 'players', 'matches' ), true ) ) {
+			self::redirect_import_export( array( 'ml_message' => 'invalid_entity' ) );
+		}
+
+		$filters = array(
+			'season_id'      => isset( $_POST['season_id'] ) ? absint( wp_unslash( $_POST['season_id'] ) ) : 0,
+			'competition_id' => isset( $_POST['competition_id'] ) ? absint( wp_unslash( $_POST['competition_id'] ) ) : 0,
+			'team_id'        => isset( $_POST['team_id'] ) ? absint( wp_unslash( $_POST['team_id'] ) ) : 0,
+		);
+
+		$rows = ML_Import_Export_Service::export_rows( $entity, $filters );
+		self::send_csv_response( $entity . '-export-' . gmdate( 'Ymd-His' ), $rows );
+	}
+
+	/**
+	 * Download import errors as CSV.
+	 *
+	 * @return void
+	 */
+	public static function handle_import_errors_csv(): void {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+
+		check_admin_referer( 'ml_import_errors_csv', 'ml_import_errors_nonce' );
+
+		$token = isset( $_GET['result'] ) ? sanitize_key( wp_unslash( $_GET['result'] ) ) : '';
+		if ( '' === $token ) {
+			wp_die( esc_html__( 'Missing import result token.', 'mahl-league' ) );
+		}
+
+		$stored = get_transient( 'ml_import_result_' . $token );
+		if ( ! is_array( $stored ) || empty( $stored['result']['error_messages'] ) ) {
+			wp_die( esc_html__( 'Import error report is not available.', 'mahl-league' ) );
+		}
+
+		$rows   = array();
+		$rows[] = array( 'row', 'message' );
+		foreach ( $stored['result']['error_messages'] as $error ) {
+			$rows[] = array(
+				(string) ( isset( $error['row'] ) ? absint( $error['row'] ) : 0 ),
+				(string) ( isset( $error['message'] ) ? sanitize_text_field( $error['message'] ) : '' ),
+			);
+		}
+
+		self::send_csv_response( 'import-errors-' . gmdate( 'Ymd-His' ), $rows );
+	}
+
+	/**
 	 * Recursively sanitize data for future complex request payloads.
 	 *
 	 * @param mixed $value Incoming request value.
@@ -303,6 +536,158 @@ class ML_Admin_Screens {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Render import screen notices.
+	 *
+	 * @return void
+	 */
+	private static function render_import_notices(): void {
+		if ( isset( $_GET['ml_message'] ) ) {
+			$code    = sanitize_key( wp_unslash( $_GET['ml_message'] ) );
+			$message = '';
+			if ( 'invalid_entity' === $code ) {
+				$message = __( 'Invalid entity selection.', 'mahl-league' );
+			} elseif ( 'missing_file' === $code ) {
+				$message = __( 'Please upload a CSV file.', 'mahl-league' );
+			} elseif ( 'upload_error' === $code ) {
+				$message = __( 'CSV upload failed.', 'mahl-league' );
+			}
+
+			if ( '' !== $message ) {
+				echo '<div class="notice notice-error"><p>' . esc_html( $message ) . '</p></div>';
+			}
+		}
+
+		if ( ! isset( $_GET['ml_import_result'] ) ) {
+			return;
+		}
+
+		$token  = sanitize_key( wp_unslash( $_GET['ml_import_result'] ) );
+		$stored = get_transient( 'ml_import_result_' . $token );
+		if ( ! is_array( $stored ) || empty( $stored['result'] ) ) {
+			return;
+		}
+
+		$result  = $stored['result'];
+		$notice  = ( isset( $result['errors'] ) && (int) $result['errors'] > 0 ) ? 'notice-warning' : 'notice-success';
+		$dry_run = ! empty( $stored['dry_run'] ) ? __( ' (dry run)', 'mahl-league' ) : '';
+
+		echo '<div class="notice ' . esc_attr( $notice ) . '"><p>';
+		echo esc_html(
+			sprintf(
+				/* translators: 1: created count, 2: updated count, 3: skipped count, 4: errors count, 5: dry-run marker. */
+				__( 'Import summary%5$s: created %1$d, updated %2$d, skipped %3$d, errors %4$d.', 'mahl-league' ),
+				isset( $result['created'] ) ? absint( $result['created'] ) : 0,
+				isset( $result['updated'] ) ? absint( $result['updated'] ) : 0,
+				isset( $result['skipped'] ) ? absint( $result['skipped'] ) : 0,
+				isset( $result['errors'] ) ? absint( $result['errors'] ) : 0,
+				$dry_run
+			)
+		);
+		echo '</p>';
+
+		if ( ! empty( $result['error_messages'] ) ) {
+			echo '<p><strong>' . esc_html__( 'First 50 errors:', 'mahl-league' ) . '</strong></p><ol>';
+			foreach ( $result['error_messages'] as $error ) {
+				echo '<li>';
+				echo esc_html(
+					sprintf(
+						/* translators: 1: CSV row, 2: error message. */
+						__( 'Row %1$d: %2$s', 'mahl-league' ),
+						isset( $error['row'] ) ? absint( $error['row'] ) : 0,
+						isset( $error['message'] ) ? sanitize_text_field( $error['message'] ) : ''
+					)
+				);
+				echo '</li>';
+			}
+			echo '</ol>';
+
+			$error_link = wp_nonce_url(
+				add_query_arg(
+					array(
+						'action' => 'ml_import_errors_csv',
+						'result' => $token,
+					),
+					admin_url( 'admin-post.php' )
+				),
+				'ml_import_errors_csv',
+				'ml_import_errors_nonce'
+			);
+
+			echo '<p><a class="button" href="' . esc_url( $error_link ) . '">' . esc_html__( 'Download error report CSV', 'mahl-league' ) . '</a></p>';
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Build sample CSV export link.
+	 *
+	 * @param string $entity Entity type.
+	 *
+	 * @return string
+	 */
+	private static function build_sample_export_link( string $entity ): string {
+		return wp_nonce_url(
+			add_query_arg(
+				array(
+					'action' => 'ml_export_csv',
+					'sample' => 1,
+					'entity' => $entity,
+				),
+				admin_url( 'admin-post.php' )
+			),
+			'ml_export_sample_csv'
+		);
+	}
+
+	/**
+	 * Redirect to import/export page.
+	 *
+	 * @param array $args Query args.
+	 *
+	 * @return void
+	 */
+	private static function redirect_import_export( array $args ): void {
+		$redirect_url = add_query_arg(
+			array_merge(
+				array(
+					'page' => 'ml-import-export',
+				),
+				$args
+			),
+			admin_url( 'admin.php' )
+		);
+
+		wp_safe_redirect( $redirect_url );
+		exit;
+	}
+
+	/**
+	 * Stream CSV response.
+	 *
+	 * @param string $filename Base file name.
+	 * @param array  $rows     CSV rows.
+	 *
+	 * @return void
+	 */
+	private static function send_csv_response( string $filename, array $rows ): void {
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=' . sanitize_file_name( $filename ) . '.csv' );
+
+		$output = fopen( 'php://output', 'w' );
+		if ( false === $output ) {
+			wp_die( esc_html__( 'Unable to generate CSV output.', 'mahl-league' ) );
+		}
+
+		foreach ( $rows as $row ) {
+			fputcsv( $output, $row );
+		}
+
+		fclose( $output );
+		exit;
 	}
 
 	/**
