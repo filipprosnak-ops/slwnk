@@ -1,0 +1,343 @@
+<?php
+/**
+ * Render admin screens for MAHL League.
+ *
+ * @package MAHLLeague
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class ML_Admin_Screens
+ */
+class ML_Admin_Screens {
+
+	/**
+	 * Render dashboard screen.
+	 *
+	 * @return void
+	 */
+	public static function render_dashboard(): void {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html__( 'MAHL Liga Dashboard', 'mahl-league' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Use Teams, Players and Matches menus for basic CRUD. Use Match Editor for structured match meta.', 'mahl-league' ) . '</p>';
+		echo '</div>';
+	}
+
+	/**
+	 * Render standings screen placeholder.
+	 *
+	 * @return void
+	 */
+	public static function render_standings(): void {
+		self::render_placeholder_screen(
+			__( 'Standings', 'mahl-league' ),
+			__( 'Standings will be available in Phase 3.', 'mahl-league' )
+		);
+	}
+
+	/**
+	 * Render statistics screen placeholder.
+	 *
+	 * @return void
+	 */
+	public static function render_statistics(): void {
+		self::render_placeholder_screen(
+			__( 'Statistics', 'mahl-league' ),
+			__( 'Statistics will be available in Phase 3.', 'mahl-league' )
+		);
+	}
+
+	/**
+	 * Render playoffs screen placeholder.
+	 *
+	 * @return void
+	 */
+	public static function render_playoffs(): void {
+		self::render_placeholder_screen(
+			__( 'Playoffs', 'mahl-league' ),
+			__( 'Playoffs management will be available in a later phase.', 'mahl-league' )
+		);
+	}
+
+	/**
+	 * Render import/export screen placeholder.
+	 *
+	 * @return void
+	 */
+	public static function render_import_export(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		self::render_placeholder_screen(
+			__( 'Import / Export', 'mahl-league' ),
+			__( 'CSV import and export tools will be available in Phase 7.', 'mahl-league' )
+		);
+	}
+
+	/**
+	 * Render settings screen placeholder.
+	 *
+	 * @return void
+	 */
+	public static function render_settings(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		self::render_placeholder_screen(
+			__( 'Settings', 'mahl-league' ),
+			__( 'Plugin settings will be expanded in future phases.', 'mahl-league' )
+		);
+	}
+
+	/**
+	 * Render match editor screen.
+	 *
+	 * @return void
+	 */
+	public static function render_match_editor(): void {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		$matches = get_posts(
+			array(
+				'post_type'      => 'ml_match',
+				'posts_per_page' => 100,
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future' ),
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			)
+		);
+
+		$teams = get_posts(
+			array(
+				'post_type'      => 'ml_team',
+				'posts_per_page' => 200,
+				'post_status'    => array( 'publish', 'draft' ),
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+
+		$match_id = isset( $_GET['match_id'] ) ? absint( wp_unslash( $_GET['match_id'] ) ) : 0;
+
+		$current = array(
+			'home_team'   => 0,
+			'away_team'   => 0,
+			'datetime'    => '',
+			'venue'       => '',
+			'referees'    => '',
+			'status'      => 'scheduled',
+			'home_score'  => 0,
+			'away_score'  => 0,
+			'stage_label' => '',
+			'round_label' => '',
+		);
+
+		if ( $match_id > 0 ) {
+			$current['home_team']   = absint( get_post_meta( $match_id, 'ml_home_team_id', true ) );
+			$current['away_team']   = absint( get_post_meta( $match_id, 'ml_away_team_id', true ) );
+			$current['datetime']    = (string) get_post_meta( $match_id, 'ml_match_datetime', true );
+			$current['venue']       = (string) get_post_meta( $match_id, 'ml_venue', true );
+			$current['referees']    = (string) get_post_meta( $match_id, 'ml_referees', true );
+			$current['status']      = (string) get_post_meta( $match_id, 'ml_status', true );
+			$current['home_score']  = absint( get_post_meta( $match_id, 'ml_home_score', true ) );
+			$current['away_score']  = absint( get_post_meta( $match_id, 'ml_away_score', true ) );
+			$current['stage_label'] = (string) get_post_meta( $match_id, 'ml_stage_label', true );
+			$current['round_label'] = (string) get_post_meta( $match_id, 'ml_round_label', true );
+		}
+
+		$statuses = array(
+			'scheduled' => __( 'Scheduled', 'mahl-league' ),
+			'played'    => __( 'Played', 'mahl-league' ),
+			'canceled'  => __( 'Canceled', 'mahl-league' ),
+		);
+
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html__( 'Match Editor', 'mahl-league' ) . '</h1>';
+
+		if ( isset( $_GET['ml_updated'] ) && '1' === wp_unslash( $_GET['ml_updated'] ) ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Match data has been saved.', 'mahl-league' ) . '</p></div>';
+		}
+
+		echo '<form method="get" action="">';
+		echo '<input type="hidden" name="page" value="ml-match-editor" />';
+		echo '<label for="ml-match-id"><strong>' . esc_html__( 'Select Match', 'mahl-league' ) . '</strong></label> ';
+		echo '<select id="ml-match-id" name="match_id">';
+		echo '<option value="0">' . esc_html__( 'Choose a match', 'mahl-league' ) . '</option>';
+		foreach ( $matches as $match ) {
+			echo '<option value="' . esc_attr( (string) $match->ID ) . '" ' . selected( $match_id, $match->ID, false ) . '>' . esc_html( $match->post_title ) . '</option>';
+		}
+		echo '</select> ';
+		submit_button( __( 'Load Match', 'mahl-league' ), 'secondary', '', false );
+		echo '</form>';
+
+		echo '<hr />';
+		echo '<h2>' . esc_html__( 'Match Overview', 'mahl-league' ) . '</h2>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="ml_save_match_editor" />';
+		echo '<input type="hidden" name="match_id" value="' . esc_attr( (string) $match_id ) . '" />';
+		wp_nonce_field( 'ml_save_match_editor', 'ml_match_editor_nonce' );
+
+		echo '<h3>' . esc_html__( 'Teams', 'mahl-league' ) . '</h3>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		self::render_team_select_row( 'ml_home_team_id', __( 'Home Team', 'mahl-league' ), $teams, $current['home_team'] );
+		self::render_team_select_row( 'ml_away_team_id', __( 'Away Team', 'mahl-league' ), $teams, $current['away_team'] );
+		echo '</tbody></table>';
+
+		echo '<h3>' . esc_html__( 'Schedule & Venue', 'mahl-league' ) . '</h3>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		self::render_input_row( 'ml_match_datetime', __( 'Date & Time', 'mahl-league' ), $current['datetime'], 'datetime-local' );
+		self::render_input_row( 'ml_venue', __( 'Venue', 'mahl-league' ), $current['venue'] );
+		self::render_input_row( 'ml_referees', __( 'Referees', 'mahl-league' ), $current['referees'] );
+		echo '</tbody></table>';
+
+		echo '<h3>' . esc_html__( 'Result & Labels', 'mahl-league' ) . '</h3>';
+		echo '<table class="form-table" role="presentation"><tbody>';
+		self::render_select_row( 'ml_status', __( 'Status', 'mahl-league' ), $statuses, $current['status'] );
+		self::render_input_row( 'ml_home_score', __( 'Home Score', 'mahl-league' ), (string) $current['home_score'], 'number' );
+		self::render_input_row( 'ml_away_score', __( 'Away Score', 'mahl-league' ), (string) $current['away_score'], 'number' );
+		self::render_input_row( 'ml_stage_label', __( 'Stage Label', 'mahl-league' ), $current['stage_label'] );
+		self::render_input_row( 'ml_round_label', __( 'Round Label', 'mahl-league' ), $current['round_label'] );
+		echo '</tbody></table>';
+
+		submit_button( __( 'Save Match', 'mahl-league' ), 'primary', 'submit', true, array( 'disabled' => $match_id <= 0 ) );
+		echo '</form>';
+		echo '</div>';
+	}
+
+	/**
+	 * Handle match editor save.
+	 *
+	 * @return void
+	 */
+	public static function handle_match_editor_save(): void {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+
+		check_admin_referer( 'ml_save_match_editor', 'ml_match_editor_nonce' );
+
+		$match_id = isset( $_POST['match_id'] ) ? absint( wp_unslash( $_POST['match_id'] ) ) : 0;
+		if ( $match_id <= 0 || 'ml_match' !== get_post_type( $match_id ) ) {
+			wp_die( esc_html__( 'Invalid match selected.', 'mahl-league' ) );
+		}
+
+		$allowed_statuses = array( 'scheduled', 'played', 'canceled' );
+		$status           = isset( $_POST['ml_status'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_status'] ) ) : 'scheduled';
+		if ( ! in_array( $status, $allowed_statuses, true ) ) {
+			$status = 'scheduled';
+		}
+
+		update_post_meta( $match_id, 'ml_home_team_id', isset( $_POST['ml_home_team_id'] ) ? absint( wp_unslash( $_POST['ml_home_team_id'] ) ) : 0 );
+		update_post_meta( $match_id, 'ml_away_team_id', isset( $_POST['ml_away_team_id'] ) ? absint( wp_unslash( $_POST['ml_away_team_id'] ) ) : 0 );
+		update_post_meta( $match_id, 'ml_match_datetime', isset( $_POST['ml_match_datetime'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_match_datetime'] ) ) : '' );
+		update_post_meta( $match_id, 'ml_venue', isset( $_POST['ml_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_venue'] ) ) : '' );
+		update_post_meta( $match_id, 'ml_referees', isset( $_POST['ml_referees'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_referees'] ) ) : '' );
+		update_post_meta( $match_id, 'ml_status', $status );
+		update_post_meta( $match_id, 'ml_home_score', isset( $_POST['ml_home_score'] ) ? absint( wp_unslash( $_POST['ml_home_score'] ) ) : 0 );
+		update_post_meta( $match_id, 'ml_away_score', isset( $_POST['ml_away_score'] ) ? absint( wp_unslash( $_POST['ml_away_score'] ) ) : 0 );
+		update_post_meta( $match_id, 'ml_stage_label', isset( $_POST['ml_stage_label'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_stage_label'] ) ) : '' );
+		update_post_meta( $match_id, 'ml_round_label', isset( $_POST['ml_round_label'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_round_label'] ) ) : '' );
+
+		$redirect_url = add_query_arg(
+			array(
+				'page'       => 'ml-match-editor',
+				'match_id'   => $match_id,
+				'ml_updated' => 1,
+			),
+			admin_url( 'admin.php' )
+		);
+
+		wp_safe_redirect( $redirect_url );
+		exit;
+	}
+
+	/**
+	 * Render placeholder screen.
+	 *
+	 * @param string $title   Title.
+	 * @param string $message Message.
+	 *
+	 * @return void
+	 */
+	private static function render_placeholder_screen( string $title, string $message ): void {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html( $title ) . '</h1>';
+		echo '<p>' . esc_html( $message ) . '</p>';
+		echo '</div>';
+	}
+
+	/**
+	 * Render generic input row.
+	 *
+	 * @param string $name  Input name.
+	 * @param string $label Input label.
+	 * @param string $value Input value.
+	 * @param string $type  Input type.
+	 *
+	 * @return void
+	 */
+	private static function render_input_row( string $name, string $label, string $value, string $type = 'text' ): void {
+		echo '<tr>';
+		echo '<th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th>';
+		echo '<td><input name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '" type="' . esc_attr( $type ) . '" value="' . esc_attr( $value ) . '" class="regular-text" /></td>';
+		echo '</tr>';
+	}
+
+	/**
+	 * Render generic select row.
+	 *
+	 * @param string $name    Field name.
+	 * @param string $label   Field label.
+	 * @param array  $options Options.
+	 * @param string $value   Selected value.
+	 *
+	 * @return void
+	 */
+	private static function render_select_row( string $name, string $label, array $options, string $value ): void {
+		echo '<tr>';
+		echo '<th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th>';
+		echo '<td><select name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '">';
+		foreach ( $options as $option_value => $option_label ) {
+			echo '<option value="' . esc_attr( (string) $option_value ) . '" ' . selected( $value, (string) $option_value, false ) . '>' . esc_html( (string) $option_label ) . '</option>';
+		}
+		echo '</select></td>';
+		echo '</tr>';
+	}
+
+	/**
+	 * Render team select row.
+	 *
+	 * @param string $name     Field name.
+	 * @param string $label    Field label.
+	 * @param array  $teams    Team posts.
+	 * @param int    $selected Selected team ID.
+	 *
+	 * @return void
+	 */
+	private static function render_team_select_row( string $name, string $label, array $teams, int $selected ): void {
+		echo '<tr>';
+		echo '<th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th>';
+		echo '<td><select name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '">';
+		echo '<option value="0">' . esc_html__( 'Select team', 'mahl-league' ) . '</option>';
+		foreach ( $teams as $team ) {
+			echo '<option value="' . esc_attr( (string) $team->ID ) . '" ' . selected( $selected, $team->ID, false ) . '>' . esc_html( $team->post_title ) . '</option>';
+		}
+		echo '</select></td>';
+		echo '</tr>';
+	}
+}
