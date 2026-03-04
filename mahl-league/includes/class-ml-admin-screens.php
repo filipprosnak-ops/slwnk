@@ -216,6 +216,14 @@ class ML_Admin_Screens {
 	}
 
 	/**
+	 * Security template for future admin_post_ml_* handlers:
+	 * 1) Verify capability checks before state changes.
+	 * 2) Verify nonce with check_admin_referer()/wp_verify_nonce().
+	 * 3) Sanitize all input (including recursive arrays).
+	 * 4) Redirect with wp_safe_redirect() and exit.
+	 */
+
+	/**
 	 * Handle match editor save.
 	 *
 	 * @return void
@@ -233,6 +241,9 @@ class ML_Admin_Screens {
 		}
 
 		$allowed_statuses = array( 'scheduled', 'played', 'canceled' );
+
+		// TODO: Use self::sanitize_recursive() for future complex payloads (rosters/timeline arrays).
+		// Example: $payload = self::sanitize_recursive( wp_unslash( $_POST['ml_roster'] ) );
 		$status           = isset( $_POST['ml_status'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_status'] ) ) : 'scheduled';
 		if ( ! in_array( $status, $allowed_statuses, true ) ) {
 			$status = 'scheduled';
@@ -260,6 +271,38 @@ class ML_Admin_Screens {
 
 		wp_safe_redirect( $redirect_url );
 		exit;
+	}
+
+	/**
+	 * Recursively sanitize data for future complex request payloads.
+	 *
+	 * @param mixed $value Incoming request value.
+	 *
+	 * @return mixed
+	 */
+	private static function sanitize_recursive( $value ) {
+		if ( is_array( $value ) ) {
+			$sanitized = array();
+			foreach ( $value as $key => $item ) {
+				$sanitized[ sanitize_key( (string) $key ) ] = self::sanitize_recursive( $item );
+			}
+
+			return $sanitized;
+		}
+
+		if ( is_bool( $value ) ) {
+			return (bool) $value;
+		}
+
+		if ( is_int( $value ) || ( is_string( $value ) && is_numeric( $value ) ) ) {
+			return absint( $value );
+		}
+
+		if ( is_scalar( $value ) ) {
+			return sanitize_text_field( (string) $value );
+		}
+
+		return '';
 	}
 
 	/**

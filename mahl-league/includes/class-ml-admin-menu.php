@@ -53,7 +53,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Teams', 'mahl-league' ),
 			__( 'Teams', 'mahl-league' ),
-			'manage_ml_league',
+			'edit_ml_teams',
 			'edit.php?post_type=ml_team'
 		);
 
@@ -61,7 +61,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Players', 'mahl-league' ),
 			__( 'Players', 'mahl-league' ),
-			'manage_ml_league',
+			'edit_ml_players',
 			'edit.php?post_type=ml_player'
 		);
 
@@ -69,7 +69,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Matches', 'mahl-league' ),
 			__( 'Matches', 'mahl-league' ),
-			'manage_ml_league',
+			'edit_ml_matches',
 			'edit.php?post_type=ml_match'
 		);
 
