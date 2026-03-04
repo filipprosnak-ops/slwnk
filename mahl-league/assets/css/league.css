@@ -55,6 +55,29 @@
 	text-decoration: underline;
 }
 
+
+/* Reusable component classes */
+.ml-league .ml-match-card,
+.ml-league .ml-team-card,
+.ml-league .ml-player-card,
+.ml-league .ml-stat-card {
+	background: var(--ml-color-surface);
+	border: 1px solid var(--ml-color-border);
+	border-radius: var(--ml-radius);
+	box-shadow: var(--ml-shadow);
+	padding: 0.85rem 1rem;
+}
+
+.ml-league .ml-standings-table {
+	width: 100%;
+	border-collapse: collapse;
+	background: var(--ml-color-bg);
+	border: 1px solid var(--ml-color-border);
+	border-radius: var(--ml-radius);
+	overflow: hidden;
+	box-shadow: var(--ml-shadow);
+}
+
 /* Match cards */
 .ml-league-matches li,
 .ml-league-results li {
@@ -102,6 +125,10 @@
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
+.ml-league-players ul {
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
 /* Timeline style (reusable class for future match detail/events) */
 .ml-league .ml-timeline {
 	border-left: 3px solid var(--ml-color-primary);
@@ -135,6 +162,7 @@
 	}
 
 	.ml-league table,
+	.ml-league .ml-standings-table,
 	.ml-league thead,
 	.ml-league tbody,
 	.ml-league th,
