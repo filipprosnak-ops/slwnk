@@ -51,8 +51,10 @@ class ML_Post_Types {
 				'has_archive'     => true,
 				'rewrite'         => array( 'slug' => 'teams' ),
 				'menu_icon'       => 'dashicons-groups',
+				'show_in_menu'    => false,
 				'supports'        => array( 'title', 'editor', 'thumbnail' ),
-				'capability_type' => 'ml_team',
+				'capability_type' => array( 'ml_team', 'ml_teams' ),
+				'capabilities'    => self::get_capabilities( 'team', 'teams' ),
 				'map_meta_cap'    => true,
 			)
 		);
@@ -84,8 +86,10 @@ class ML_Post_Types {
 				'has_archive'     => true,
 				'rewrite'         => array( 'slug' => 'players' ),
 				'menu_icon'       => 'dashicons-id-alt',
+				'show_in_menu'    => false,
 				'supports'        => array( 'title', 'editor', 'thumbnail' ),
-				'capability_type' => 'ml_player',
+				'capability_type' => array( 'ml_player', 'ml_players' ),
+				'capabilities'    => self::get_capabilities( 'player', 'players' ),
 				'map_meta_cap'    => true,
 			)
 		);
@@ -117,10 +121,41 @@ class ML_Post_Types {
 				'has_archive'     => true,
 				'rewrite'         => array( 'slug' => 'matches' ),
 				'menu_icon'       => 'dashicons-calendar-alt',
+				'show_in_menu'    => false,
 				'supports'        => array( 'title', 'editor' ),
-				'capability_type' => 'ml_match',
+				'capability_type' => array( 'ml_match', 'ml_matches' ),
+				'capabilities'    => self::get_capabilities( 'match', 'matches' ),
 				'map_meta_cap'    => true,
 			)
+		);
+	}
+
+	/**
+	 * Build explicit capability map for ML post types.
+	 *
+	 * @param string $singular Singular key segment.
+	 * @param string $plural   Plural key segment.
+	 *
+	 * @return array
+	 */
+	private static function get_capabilities( string $singular, string $plural ): array {
+		$prefix = 'ml_';
+
+		return array(
+			'edit_post'              => 'edit_' . $prefix . $singular,
+			'read_post'              => 'read_' . $prefix . $singular,
+			'delete_post'            => 'delete_' . $prefix . $singular,
+			'edit_posts'             => 'edit_' . $prefix . $plural,
+			'edit_others_posts'      => 'edit_others_' . $prefix . $plural,
+			'publish_posts'          => 'publish_' . $prefix . $plural,
+			'read_private_posts'     => 'read_private_' . $prefix . $plural,
+			'delete_posts'           => 'delete_' . $prefix . $plural,
+			'delete_private_posts'   => 'delete_private_' . $prefix . $plural,
+			'delete_published_posts' => 'delete_published_' . $prefix . $plural,
+			'delete_others_posts'    => 'delete_others_' . $prefix . $plural,
+			'edit_private_posts'     => 'edit_private_' . $prefix . $plural,
+			'edit_published_posts'   => 'edit_published_' . $prefix . $plural,
+			'create_posts'           => 'edit_' . $prefix . $plural,
 		);
 	}
 }

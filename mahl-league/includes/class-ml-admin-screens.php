@@ -20,7 +20,7 @@ class ML_Admin_Screens {
 	 * @return void
 	 */
 	public static function render_dashboard(): void {
-		if ( ! current_user_can( 'edit_posts' ) ) {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
 		}
 
@@ -72,7 +72,7 @@ class ML_Admin_Screens {
 	 * @return void
 	 */
 	public static function render_import_export(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
 		}
 
@@ -88,7 +88,7 @@ class ML_Admin_Screens {
 	 * @return void
 	 */
 	public static function render_settings(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
 		}
 
@@ -104,7 +104,7 @@ class ML_Admin_Screens {
 	 * @return void
 	 */
 	public static function render_match_editor(): void {
-		if ( ! current_user_can( 'edit_posts' ) ) {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
 		}
 
@@ -221,15 +221,15 @@ class ML_Admin_Screens {
 	 * @return void
 	 */
 	public static function handle_match_editor_save(): void {
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
-		}
-
 		check_admin_referer( 'ml_save_match_editor', 'ml_match_editor_nonce' );
 
 		$match_id = isset( $_POST['match_id'] ) ? absint( wp_unslash( $_POST['match_id'] ) ) : 0;
 		if ( $match_id <= 0 || 'ml_match' !== get_post_type( $match_id ) ) {
 			wp_die( esc_html__( 'Invalid match selected.', 'mahl-league' ) );
+		}
+
+		if ( ! current_user_can( 'edit_post', $match_id ) && ! current_user_can( 'edit_ml_matches' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
 		}
 
 		$allowed_statuses = array( 'scheduled', 'played', 'canceled' );
@@ -271,7 +271,7 @@ class ML_Admin_Screens {
 	 * @return void
 	 */
 	private static function render_placeholder_screen( string $title, string $message ): void {
-		if ( ! current_user_can( 'edit_posts' ) ) {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
 		}
 

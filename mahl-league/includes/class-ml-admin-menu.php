@@ -33,7 +33,7 @@ class ML_Admin_Menu {
 		add_menu_page(
 			__( 'MAHL Liga', 'mahl-league' ),
 			__( 'MAHL Liga', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'ml-dashboard',
 			array( ML_Admin_Screens::class, 'render_dashboard' ),
 			'dashicons-shield',
@@ -44,7 +44,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Dashboard', 'mahl-league' ),
 			__( 'Dashboard', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'ml-dashboard',
 			array( ML_Admin_Screens::class, 'render_dashboard' )
 		);
@@ -53,7 +53,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Teams', 'mahl-league' ),
 			__( 'Teams', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'edit.php?post_type=ml_team'
 		);
 
@@ -61,7 +61,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Players', 'mahl-league' ),
 			__( 'Players', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'edit.php?post_type=ml_player'
 		);
 
@@ -69,7 +69,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Matches', 'mahl-league' ),
 			__( 'Matches', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'edit.php?post_type=ml_match'
 		);
 
@@ -77,7 +77,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Match Editor', 'mahl-league' ),
 			__( 'Match Editor', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'ml-match-editor',
 			array( ML_Admin_Screens::class, 'render_match_editor' )
 		);
@@ -86,7 +86,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Standings', 'mahl-league' ),
 			__( 'Standings', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'ml-standings',
 			array( ML_Admin_Screens::class, 'render_standings' )
 		);
@@ -95,7 +95,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Statistics', 'mahl-league' ),
 			__( 'Statistics', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'ml-statistics',
 			array( ML_Admin_Screens::class, 'render_statistics' )
 		);
@@ -104,7 +104,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Playoffs', 'mahl-league' ),
 			__( 'Playoffs', 'mahl-league' ),
-			'edit_posts',
+			'manage_ml_league',
 			'ml-playoffs',
 			array( ML_Admin_Screens::class, 'render_playoffs' )
 		);
@@ -113,7 +113,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Import / Export', 'mahl-league' ),
 			__( 'Import / Export', 'mahl-league' ),
-			'manage_options',
+			'manage_ml_league',
 			'ml-import-export',
 			array( ML_Admin_Screens::class, 'render_import_export' )
 		);
@@ -122,7 +122,7 @@ class ML_Admin_Menu {
 			'ml-dashboard',
 			__( 'Settings', 'mahl-league' ),
 			__( 'Settings', 'mahl-league' ),
-			'manage_options',
+			'manage_ml_league',
 			'ml-settings',
 			array( ML_Admin_Screens::class, 'render_settings' )
 		);
