@@ -42,6 +42,7 @@ class ML_Plugin {
 	public function init(): void {
 		add_action( 'init', array( ML_Post_Types::class, 'register' ) );
 		add_action( 'init', array( ML_Taxonomies::class, 'register' ) );
+		add_filter( 'use_block_editor_for_post_type', array( ML_Post_Types::class, 'disable_block_editor' ), 10, 2 );
 
 		ML_Stats_Engine::register();
 		ML_Shortcodes::register();

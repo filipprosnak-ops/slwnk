@@ -31,6 +31,265 @@ class ML_Admin_Screens {
 	}
 
 	/**
+	 * Render teams management list.
+	 *
+	 * @return void
+	 */
+	public static function render_teams(): void {
+		if ( ! current_user_can( 'edit_ml_teams' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		$teams = get_posts(
+			array(
+				'post_type'      => 'ml_team',
+				'post_status'    => array( 'publish', 'draft' ),
+				'posts_per_page' => 300,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+
+		echo '<div class="wrap">';
+		echo '<h1 class="wp-heading-inline">' . esc_html__( 'Teams', 'mahl-league' ) . '</h1>';
+		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=ml-team-edit' ) ) . '" class="page-title-action">' . esc_html__( 'Add Team', 'mahl-league' ) . '</a>';
+		self::render_admin_notice();
+		echo '<hr class="wp-header-end" />';
+		echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Name', 'mahl-league' ) . '</th><th>' . esc_html__( 'Slug', 'mahl-league' ) . '</th><th>' . esc_html__( 'Short Name', 'mahl-league' ) . '</th><th>' . esc_html__( 'Logo URL', 'mahl-league' ) . '</th><th>' . esc_html__( 'Actions', 'mahl-league' ) . '</th></tr></thead><tbody>';
+		if ( empty( $teams ) ) {
+			echo '<tr><td colspan="5">' . esc_html__( 'No teams found.', 'mahl-league' ) . '</td></tr>';
+		} else {
+			foreach ( $teams as $team ) {
+				$edit_url   = add_query_arg( array( 'page' => 'ml-team-edit', 'team_id' => (int) $team->ID ), admin_url( 'admin.php' ) );
+				$delete_url = wp_nonce_url(
+					add_query_arg(
+						array(
+							'action'  => 'ml_delete_team',
+							'team_id' => (int) $team->ID,
+						),
+						admin_url( 'admin-post.php' )
+					),
+					'ml_delete_team_' . (int) $team->ID,
+					'ml_delete_team_nonce'
+				);
+
+				echo '<tr>';
+				echo '<td>' . esc_html( $team->post_title ) . '</td>';
+				echo '<td>' . esc_html( (string) $team->post_name ) . '</td>';
+				echo '<td>' . esc_html( (string) get_post_meta( $team->ID, 'ml_team_short', true ) ) . '</td>';
+				echo '<td>' . esc_html( (string) get_post_meta( $team->ID, 'ml_team_logo_url', true ) ) . '</td>';
+				echo '<td><a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'mahl-league' ) . '</a> | <a href="' . esc_url( $delete_url ) . '">' . esc_html__( 'Delete', 'mahl-league' ) . '</a></td>';
+				echo '</tr>';
+			}
+		}
+		echo '</tbody></table>';
+		echo '</div>';
+	}
+
+	/**
+	 * Render team create/edit form.
+	 *
+	 * @return void
+	 */
+	public static function render_team_edit(): void {
+		if ( ! current_user_can( 'edit_ml_teams' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		$team_id = isset( $_GET['team_id'] ) ? absint( wp_unslash( $_GET['team_id'] ) ) : 0;
+		if ( $team_id > 0 && 'ml_team' !== get_post_type( $team_id ) ) {
+			wp_die( esc_html__( 'Invalid team selected.', 'mahl-league' ) );
+		}
+
+		$title     = $team_id > 0 ? get_the_title( $team_id ) : '';
+		$slug      = $team_id > 0 ? (string) get_post_field( 'post_name', $team_id ) : '';
+		$short_name = $team_id > 0 ? (string) get_post_meta( $team_id, 'ml_team_short', true ) : '';
+		$logo_url  = $team_id > 0 ? (string) get_post_meta( $team_id, 'ml_team_logo_url', true ) : '';
+
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html( $team_id > 0 ? __( 'Edit Team', 'mahl-league' ) : __( 'Add Team', 'mahl-league' ) ) . '</h1>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="ml_save_team" />';
+		echo '<input type="hidden" name="team_id" value="' . esc_attr( (string) $team_id ) . '" />';
+		wp_nonce_field( 'ml_save_team', 'ml_save_team_nonce' );
+		echo '<table class="form-table" role="presentation"><tbody>';
+		self::render_input_row( 'team_name', __( 'Name', 'mahl-league' ), (string) $title );
+		self::render_input_row( 'team_slug', __( 'Slug (optional)', 'mahl-league' ), $slug );
+		self::render_input_row( 'team_short_name', __( 'Short Name', 'mahl-league' ), $short_name );
+		self::render_input_row( 'team_logo_url', __( 'Logo URL', 'mahl-league' ), $logo_url );
+		echo '</tbody></table>';
+		submit_button( $team_id > 0 ? __( 'Save Team', 'mahl-league' ) : __( 'Create Team', 'mahl-league' ) );
+		echo ' <a class="button" href="' . esc_url( admin_url( 'admin.php?page=ml-teams' ) ) . '">' . esc_html__( 'Back to Teams', 'mahl-league' ) . '</a>';
+		echo '</form></div>';
+	}
+
+	/**
+	 * Render players management list.
+	 *
+	 * @return void
+	 */
+	public static function render_players(): void {
+		if ( ! current_user_can( 'edit_ml_players' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		$team_filter = isset( $_GET['team_id'] ) ? absint( wp_unslash( $_GET['team_id'] ) ) : 0;
+		$args        = array(
+			'post_type'      => 'ml_player',
+			'post_status'    => array( 'publish', 'draft' ),
+			'posts_per_page' => 300,
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+		);
+		if ( $team_filter > 0 ) {
+			$args['meta_query'] = array(
+				array(
+					'key'   => 'ml_player_team_id',
+					'value' => $team_filter,
+				),
+			);
+		}
+		$players = get_posts( $args );
+		$teams   = get_posts(
+			array(
+				'post_type'      => 'ml_team',
+				'post_status'    => array( 'publish', 'draft' ),
+				'posts_per_page' => 300,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+
+		echo '<div class="wrap">';
+		echo '<h1 class="wp-heading-inline">' . esc_html__( 'Players', 'mahl-league' ) . '</h1>';
+		echo ' <a href="' . esc_url( admin_url( 'admin.php?page=ml-player-edit' ) ) . '" class="page-title-action">' . esc_html__( 'Add Player', 'mahl-league' ) . '</a>';
+		self::render_admin_notice();
+		echo '<hr class="wp-header-end" />';
+		echo '<form method="get" action="' . esc_url( admin_url( 'admin.php' ) ) . '">';
+		echo '<input type="hidden" name="page" value="ml-players" />';
+		echo '<label for="ml-player-team-filter" style="margin-right:6px;">' . esc_html__( 'Team', 'mahl-league' ) . '</label>';
+		echo '<select id="ml-player-team-filter" name="team_id">';
+		echo '<option value="0">' . esc_html__( 'All teams', 'mahl-league' ) . '</option>';
+		foreach ( $teams as $team ) {
+			echo '<option value="' . esc_attr( (string) $team->ID ) . '" ' . selected( $team_filter, $team->ID, false ) . '>' . esc_html( $team->post_title ) . '</option>';
+		}
+		echo '</select> ';
+		submit_button( __( 'Filter', 'mahl-league' ), 'secondary', '', false );
+		echo '</form>';
+
+		echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Name', 'mahl-league' ) . '</th><th>' . esc_html__( 'Number', 'mahl-league' ) . '</th><th>' . esc_html__( 'Position', 'mahl-league' ) . '</th><th>' . esc_html__( 'Team', 'mahl-league' ) . '</th><th>' . esc_html__( 'External ID', 'mahl-league' ) . '</th><th>' . esc_html__( 'Actions', 'mahl-league' ) . '</th></tr></thead><tbody>';
+		if ( empty( $players ) ) {
+			echo '<tr><td colspan="6">' . esc_html__( 'No players found.', 'mahl-league' ) . '</td></tr>';
+		} else {
+			foreach ( $players as $player ) {
+				$edit_url        = add_query_arg( array( 'page' => 'ml-player-edit', 'player_id' => (int) $player->ID ), admin_url( 'admin.php' ) );
+				$player_team_id  = absint( get_post_meta( $player->ID, 'ml_player_team_id', true ) );
+				$player_team_name = $player_team_id > 0 ? (string) get_the_title( $player_team_id ) : '';
+				echo '<tr>';
+				echo '<td>' . esc_html( $player->post_title ) . '</td>';
+				echo '<td>' . esc_html( (string) get_post_meta( $player->ID, 'ml_player_number', true ) ) . '</td>';
+				echo '<td>' . esc_html( (string) get_post_meta( $player->ID, 'ml_player_position', true ) ) . '</td>';
+				echo '<td>' . esc_html( $player_team_name ) . '</td>';
+				echo '<td>' . esc_html( (string) get_post_meta( $player->ID, 'ml_external_id', true ) ) . '</td>';
+				echo '<td><a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'mahl-league' ) . '</a></td>';
+				echo '</tr>';
+			}
+		}
+		echo '</tbody></table>';
+		echo '</div>';
+	}
+
+	/**
+	 * Render player create/edit form.
+	 *
+	 * @return void
+	 */
+	public static function render_player_edit(): void {
+		if ( ! current_user_can( 'edit_ml_players' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		$player_id = isset( $_GET['player_id'] ) ? absint( wp_unslash( $_GET['player_id'] ) ) : 0;
+		if ( $player_id > 0 && 'ml_player' !== get_post_type( $player_id ) ) {
+			wp_die( esc_html__( 'Invalid player selected.', 'mahl-league' ) );
+		}
+
+		$teams = get_posts(
+			array(
+				'post_type'      => 'ml_team',
+				'post_status'    => array( 'publish', 'draft' ),
+				'posts_per_page' => 300,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+
+		$title      = $player_id > 0 ? get_the_title( $player_id ) : '';
+		$number     = $player_id > 0 ? (string) get_post_meta( $player_id, 'ml_player_number', true ) : '';
+		$position   = $player_id > 0 ? (string) get_post_meta( $player_id, 'ml_player_position', true ) : '';
+		$team_id    = $player_id > 0 ? absint( get_post_meta( $player_id, 'ml_player_team_id', true ) ) : 0;
+		$external_id = $player_id > 0 ? (string) get_post_meta( $player_id, 'ml_external_id', true ) : '';
+
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html( $player_id > 0 ? __( 'Edit Player', 'mahl-league' ) : __( 'Add Player', 'mahl-league' ) ) . '</h1>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="ml_save_player" />';
+		echo '<input type="hidden" name="player_id" value="' . esc_attr( (string) $player_id ) . '" />';
+		wp_nonce_field( 'ml_save_player', 'ml_save_player_nonce' );
+		echo '<table class="form-table" role="presentation"><tbody>';
+		self::render_input_row( 'player_name', __( 'Name', 'mahl-league' ), (string) $title );
+		self::render_input_row( 'player_number', __( 'Number', 'mahl-league' ), $number, 'number' );
+		self::render_input_row( 'player_position', __( 'Position', 'mahl-league' ), $position );
+		echo '<tr><th scope="row"><label for="player_team_id">' . esc_html__( 'Team', 'mahl-league' ) . '</label></th><td><select name="player_team_id" id="player_team_id">';
+		echo '<option value="0">' . esc_html__( 'Select team', 'mahl-league' ) . '</option>';
+		foreach ( $teams as $team ) {
+			echo '<option value="' . esc_attr( (string) $team->ID ) . '" ' . selected( $team_id, $team->ID, false ) . '>' . esc_html( $team->post_title ) . '</option>';
+		}
+		echo '</select></td></tr>';
+		self::render_input_row( 'player_external_id', __( 'External ID (optional)', 'mahl-league' ), $external_id );
+		echo '</tbody></table>';
+		submit_button( $player_id > 0 ? __( 'Save Player', 'mahl-league' ) : __( 'Create Player', 'mahl-league' ) );
+		echo ' <a class="button" href="' . esc_url( admin_url( 'admin.php?page=ml-players' ) ) . '">' . esc_html__( 'Back to Players', 'mahl-league' ) . '</a>';
+		echo '</form></div>';
+	}
+
+	/**
+	 * Render matches list with link to match editor.
+	 *
+	 * @return void
+	 */
+	public static function render_matches_list(): void {
+		if ( ! current_user_can( 'edit_ml_matches' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+
+		$matches = get_posts(
+			array(
+				'post_type'      => 'ml_match',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future' ),
+				'posts_per_page' => 200,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			)
+		);
+
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html__( 'Matches', 'mahl-league' ) . '</h1>';
+		echo '<p><a class="button button-primary" href="' . esc_url( admin_url( 'admin.php?page=ml-match-editor' ) ) . '">' . esc_html__( 'Open Match Editor', 'mahl-league' ) . '</a></p>';
+		echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Title', 'mahl-league' ) . '</th><th>' . esc_html__( 'Date', 'mahl-league' ) . '</th><th>' . esc_html__( 'Actions', 'mahl-league' ) . '</th></tr></thead><tbody>';
+		if ( empty( $matches ) ) {
+			echo '<tr><td colspan="3">' . esc_html__( 'No matches found.', 'mahl-league' ) . '</td></tr>';
+		} else {
+			foreach ( $matches as $match ) {
+				$edit_url = add_query_arg( array( 'page' => 'ml-match-editor', 'match_id' => (int) $match->ID ), admin_url( 'admin.php' ) );
+				echo '<tr><td>' . esc_html( $match->post_title ) . '</td><td>' . esc_html( (string) get_post_meta( $match->ID, 'ml_match_datetime', true ) ) . '</td><td><a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit in Match Editor', 'mahl-league' ) . '</a></td></tr>';
+			}
+		}
+		echo '</tbody></table>';
+		echo '</div>';
+	}
+
+	/**
 	 * Render standings screen placeholder.
 	 *
 	 * @return void
@@ -458,6 +717,146 @@ class ML_Admin_Screens {
 	}
 
 	/**
+	 * Handle team save action.
+	 *
+	 * @return void
+	 */
+	public static function handle_save_team(): void {
+		if ( ! current_user_can( 'edit_ml_teams' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+
+		check_admin_referer( 'ml_save_team', 'ml_save_team_nonce' );
+
+		$team_id     = isset( $_POST['team_id'] ) ? absint( wp_unslash( $_POST['team_id'] ) ) : 0;
+		$team_name   = isset( $_POST['team_name'] ) ? sanitize_text_field( wp_unslash( $_POST['team_name'] ) ) : '';
+		$team_slug   = isset( $_POST['team_slug'] ) ? sanitize_title( wp_unslash( $_POST['team_slug'] ) ) : '';
+		$short_name  = isset( $_POST['team_short_name'] ) ? sanitize_text_field( wp_unslash( $_POST['team_short_name'] ) ) : '';
+		$logo_url    = isset( $_POST['team_logo_url'] ) ? esc_url_raw( wp_unslash( $_POST['team_logo_url'] ) ) : '';
+
+		if ( '' === $team_name ) {
+			self::redirect_admin_page( 'ml-teams', array( 'ml_notice' => 'team_name_required', 'ml_notice_type' => 'error' ) );
+		}
+
+		if ( $team_id > 0 && 'ml_team' !== get_post_type( $team_id ) ) {
+			wp_die( esc_html__( 'Invalid team selected.', 'mahl-league' ) );
+		}
+
+		$post_data = array(
+			'post_title'  => $team_name,
+			'post_type'   => 'ml_team',
+			'post_status' => 'publish',
+		);
+
+		if ( '' !== $team_slug ) {
+			$post_data['post_name'] = $team_slug;
+		}
+
+		if ( $team_id > 0 ) {
+			if ( ! current_user_can( 'edit_post', $team_id ) ) {
+				wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+			}
+			$post_data['ID'] = $team_id;
+			$result          = wp_update_post( wp_slash( $post_data ), true );
+		} else {
+			$result = wp_insert_post( wp_slash( $post_data ), true );
+		}
+
+		if ( is_wp_error( $result ) ) {
+			self::redirect_admin_page( 'ml-teams', array( 'ml_notice' => 'team_save_error', 'ml_notice_type' => 'error' ) );
+		}
+
+		$team_id = absint( $result );
+		update_post_meta( $team_id, 'ml_team_short', $short_name );
+		update_post_meta( $team_id, 'ml_team_logo_url', $logo_url );
+
+		self::redirect_admin_page( 'ml-teams', array( 'ml_notice' => 'team_saved', 'ml_notice_type' => 'success' ) );
+	}
+
+	/**
+	 * Handle team delete action.
+	 *
+	 * @return void
+	 */
+	public static function handle_delete_team(): void {
+		$team_id = isset( $_GET['team_id'] ) ? absint( wp_unslash( $_GET['team_id'] ) ) : 0;
+		if ( $team_id <= 0 || 'ml_team' !== get_post_type( $team_id ) ) {
+			wp_die( esc_html__( 'Invalid team selected.', 'mahl-league' ) );
+		}
+
+		if ( ! current_user_can( 'delete_post', $team_id ) && ! current_user_can( 'delete_ml_teams' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+
+		if ( ! isset( $_GET['ml_delete_team_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ml_delete_team_nonce'] ) ), 'ml_delete_team_' . $team_id ) ) {
+			wp_die( esc_html__( 'Invalid request.', 'mahl-league' ) );
+		}
+
+		wp_delete_post( $team_id, true );
+		self::redirect_admin_page( 'ml-teams', array( 'ml_notice' => 'team_deleted', 'ml_notice_type' => 'success' ) );
+	}
+
+	/**
+	 * Handle player save action.
+	 *
+	 * @return void
+	 */
+	public static function handle_save_player(): void {
+		if ( ! current_user_can( 'edit_ml_players' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+
+		check_admin_referer( 'ml_save_player', 'ml_save_player_nonce' );
+
+		$player_id    = isset( $_POST['player_id'] ) ? absint( wp_unslash( $_POST['player_id'] ) ) : 0;
+		$player_name  = isset( $_POST['player_name'] ) ? sanitize_text_field( wp_unslash( $_POST['player_name'] ) ) : '';
+		$number       = isset( $_POST['player_number'] ) ? absint( wp_unslash( $_POST['player_number'] ) ) : 0;
+		$position     = isset( $_POST['player_position'] ) ? sanitize_text_field( wp_unslash( $_POST['player_position'] ) ) : '';
+		$team_id      = isset( $_POST['player_team_id'] ) ? absint( wp_unslash( $_POST['player_team_id'] ) ) : 0;
+		$external_id  = isset( $_POST['player_external_id'] ) ? sanitize_text_field( wp_unslash( $_POST['player_external_id'] ) ) : '';
+
+		if ( '' === $player_name || $team_id <= 0 ) {
+			self::redirect_admin_page( 'ml-players', array( 'ml_notice' => 'player_required_fields', 'ml_notice_type' => 'error' ) );
+		}
+
+		if ( 'ml_team' !== get_post_type( $team_id ) ) {
+			self::redirect_admin_page( 'ml-players', array( 'ml_notice' => 'player_invalid_team', 'ml_notice_type' => 'error' ) );
+		}
+
+		if ( $player_id > 0 && 'ml_player' !== get_post_type( $player_id ) ) {
+			wp_die( esc_html__( 'Invalid player selected.', 'mahl-league' ) );
+		}
+
+		$post_data = array(
+			'post_title'  => $player_name,
+			'post_type'   => 'ml_player',
+			'post_status' => 'publish',
+		);
+
+		if ( $player_id > 0 ) {
+			if ( ! current_user_can( 'edit_post', $player_id ) ) {
+				wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+			}
+			$post_data['ID'] = $player_id;
+			$result          = wp_update_post( wp_slash( $post_data ), true );
+		} else {
+			$result = wp_insert_post( wp_slash( $post_data ), true );
+		}
+
+		if ( is_wp_error( $result ) ) {
+			self::redirect_admin_page( 'ml-players', array( 'ml_notice' => 'player_save_error', 'ml_notice_type' => 'error' ) );
+		}
+
+		$player_id = absint( $result );
+		update_post_meta( $player_id, 'ml_player_number', $number > 0 ? (string) $number : '' );
+		update_post_meta( $player_id, 'ml_player_position', $position );
+		update_post_meta( $player_id, 'ml_player_team_id', $team_id );
+		update_post_meta( $player_id, 'ml_external_id', $external_id );
+
+		self::redirect_admin_page( 'ml-players', array( 'ml_notice' => 'player_saved', 'ml_notice_type' => 'success' ) );
+	}
+
+	/**
 	 * Handle CSV import action.
 	 *
 	 * @return void
@@ -838,6 +1237,55 @@ class ML_Admin_Screens {
 			echo '<p><a class="button" href="' . esc_url( $error_link ) . '">' . esc_html__( 'Download error report CSV', 'mahl-league' ) . '</a></p>';
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * Render generic admin notice from query args.
+	 *
+	 * @return void
+	 */
+	private static function render_admin_notice(): void {
+		if ( ! isset( $_GET['ml_notice'] ) ) {
+			return;
+		}
+
+		$notice_key  = sanitize_key( wp_unslash( $_GET['ml_notice'] ) );
+		$notice_type = isset( $_GET['ml_notice_type'] ) ? sanitize_key( wp_unslash( $_GET['ml_notice_type'] ) ) : 'success';
+		$messages    = array(
+			'team_saved'             => __( 'Team has been saved.', 'mahl-league' ),
+			'team_deleted'           => __( 'Team has been deleted.', 'mahl-league' ),
+			'team_name_required'     => __( 'Team name is required.', 'mahl-league' ),
+			'team_save_error'        => __( 'Unable to save team.', 'mahl-league' ),
+			'player_saved'           => __( 'Player has been saved.', 'mahl-league' ),
+			'player_required_fields' => __( 'Player name and team are required.', 'mahl-league' ),
+			'player_invalid_team'    => __( 'Selected team is invalid.', 'mahl-league' ),
+			'player_save_error'      => __( 'Unable to save player.', 'mahl-league' ),
+		);
+
+		if ( ! isset( $messages[ $notice_key ] ) ) {
+			return;
+		}
+
+		$classes = 'notice notice-success';
+		if ( 'error' === $notice_type ) {
+			$classes = 'notice notice-error';
+		}
+
+		echo '<div class="' . esc_attr( $classes ) . '"><p>' . esc_html( $messages[ $notice_key ] ) . '</p></div>';
+	}
+
+	/**
+	 * Redirect to an admin page.
+	 *
+	 * @param string $page_slug Page slug.
+	 * @param array  $args      Query args.
+	 *
+	 * @return void
+	 */
+	private static function redirect_admin_page( string $page_slug, array $args = array() ): void {
+		$redirect_url = add_query_arg( array_merge( array( 'page' => $page_slug ), $args ), admin_url( 'admin.php' ) );
+		wp_safe_redirect( $redirect_url );
+		exit;
 	}
 
 	/**

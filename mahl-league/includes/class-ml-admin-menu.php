@@ -21,7 +21,11 @@ class ML_Admin_Menu {
 	 */
 	public static function register(): void {
 		add_action( 'admin_menu', array( self::class, 'register_menu' ) );
+		add_action( 'admin_init', array( self::class, 'redirect_default_editors' ) );
 		add_action( 'admin_post_ml_save_match_editor', array( ML_Admin_Screens::class, 'handle_match_editor_save' ) );
+		add_action( 'admin_post_ml_save_team', array( ML_Admin_Screens::class, 'handle_save_team' ) );
+		add_action( 'admin_post_ml_delete_team', array( ML_Admin_Screens::class, 'handle_delete_team' ) );
+		add_action( 'admin_post_ml_save_player', array( ML_Admin_Screens::class, 'handle_save_player' ) );
 		add_action( 'admin_post_ml_import_csv', array( ML_Admin_Screens::class, 'handle_import_csv' ) );
 		add_action( 'admin_post_ml_export_csv', array( ML_Admin_Screens::class, 'handle_export_csv' ) );
 		add_action( 'admin_post_ml_import_errors_csv', array( ML_Admin_Screens::class, 'handle_import_errors_csv' ) );
@@ -60,7 +64,8 @@ class ML_Admin_Menu {
 			__( 'Teams', 'mahl-league' ),
 			__( 'Teams', 'mahl-league' ),
 			'edit_ml_teams',
-			'edit.php?post_type=ml_team'
+			'ml-teams',
+			array( ML_Admin_Screens::class, 'render_teams' )
 		);
 
 		add_submenu_page(
@@ -68,7 +73,8 @@ class ML_Admin_Menu {
 			__( 'Players', 'mahl-league' ),
 			__( 'Players', 'mahl-league' ),
 			'edit_ml_players',
-			'edit.php?post_type=ml_player'
+			'ml-players',
+			array( ML_Admin_Screens::class, 'render_players' )
 		);
 
 		add_submenu_page(
@@ -76,7 +82,8 @@ class ML_Admin_Menu {
 			__( 'Matches', 'mahl-league' ),
 			__( 'Matches', 'mahl-league' ),
 			'edit_ml_matches',
-			'edit.php?post_type=ml_match'
+			'ml-matches',
+			array( ML_Admin_Screens::class, 'render_matches_list' )
 		);
 
 		add_submenu_page(
@@ -144,6 +151,24 @@ class ML_Admin_Menu {
 		);
 
 		add_submenu_page(
+			null,
+			__( 'Add Team', 'mahl-league' ),
+			__( 'Add Team', 'mahl-league' ),
+			'edit_ml_teams',
+			'ml-team-edit',
+			array( ML_Admin_Screens::class, 'render_team_edit' )
+		);
+
+		add_submenu_page(
+			null,
+			__( 'Add Player', 'mahl-league' ),
+			__( 'Add Player', 'mahl-league' ),
+			'edit_ml_players',
+			'ml-player-edit',
+			array( ML_Admin_Screens::class, 'render_player_edit' )
+		);
+
+		add_submenu_page(
 			'ml-dashboard',
 			__( 'Settings', 'mahl-league' ),
 			__( 'Settings', 'mahl-league' ),
@@ -151,5 +176,58 @@ class ML_Admin_Menu {
 			'ml-settings',
 			array( ML_Admin_Screens::class, 'render_settings' )
 		);
+	}
+
+	/**
+	 * Redirect default post editors to MAHL custom screens.
+	 *
+	 * @return void
+	 */
+	public static function redirect_default_editors(): void {
+		if ( ! is_admin() || wp_doing_ajax() ) {
+			return;
+		}
+
+		global $pagenow;
+
+		if ( 'post-new.php' === $pagenow ) {
+			$post_type = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
+			if ( 'ml_team' === $post_type && current_user_can( 'edit_ml_teams' ) ) {
+				wp_safe_redirect( admin_url( 'admin.php?page=ml-team-edit' ) );
+				exit;
+			}
+			if ( 'ml_player' === $post_type && current_user_can( 'edit_ml_players' ) ) {
+				wp_safe_redirect( admin_url( 'admin.php?page=ml-player-edit' ) );
+				exit;
+			}
+			if ( 'ml_match' === $post_type && current_user_can( 'edit_ml_matches' ) ) {
+				wp_safe_redirect( admin_url( 'admin.php?page=ml-match-editor' ) );
+				exit;
+			}
+		}
+
+		if ( 'post.php' !== $pagenow ) {
+			return;
+		}
+
+		$action  = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+		$post_id = isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0;
+		if ( 'edit' !== $action || $post_id <= 0 ) {
+			return;
+		}
+
+		$post_type = get_post_type( $post_id );
+		if ( 'ml_team' === $post_type && current_user_can( 'edit_post', $post_id ) ) {
+			wp_safe_redirect( add_query_arg( array( 'page' => 'ml-team-edit', 'team_id' => $post_id ), admin_url( 'admin.php' ) ) );
+			exit;
+		}
+		if ( 'ml_player' === $post_type && current_user_can( 'edit_post', $post_id ) ) {
+			wp_safe_redirect( add_query_arg( array( 'page' => 'ml-player-edit', 'player_id' => $post_id ), admin_url( 'admin.php' ) ) );
+			exit;
+		}
+		if ( 'ml_match' === $post_type && current_user_can( 'edit_post', $post_id ) ) {
+			wp_safe_redirect( add_query_arg( array( 'page' => 'ml-match-editor', 'match_id' => $post_id ), admin_url( 'admin.php' ) ) );
+			exit;
+		}
 	}
 }

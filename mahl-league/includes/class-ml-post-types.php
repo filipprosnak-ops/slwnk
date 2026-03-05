@@ -52,7 +52,7 @@ class ML_Post_Types {
 				'rewrite'         => array( 'slug' => 'teams' ),
 				'menu_icon'       => 'dashicons-groups',
 				'show_in_menu'    => false,
-				'supports'        => array( 'title', 'editor', 'thumbnail' ),
+				'supports'        => array( 'title', 'thumbnail' ),
 				'capability_type' => array( 'ml_team', 'ml_teams' ),
 				'capabilities'    => self::get_capabilities( 'team', 'teams' ),
 				'map_meta_cap'    => true,
@@ -87,7 +87,7 @@ class ML_Post_Types {
 				'rewrite'         => array( 'slug' => 'players' ),
 				'menu_icon'       => 'dashicons-id-alt',
 				'show_in_menu'    => false,
-				'supports'        => array( 'title', 'editor', 'thumbnail' ),
+				'supports'        => array( 'title', 'thumbnail' ),
 				'capability_type' => array( 'ml_player', 'ml_players' ),
 				'capabilities'    => self::get_capabilities( 'player', 'players' ),
 				'map_meta_cap'    => true,
@@ -122,12 +122,28 @@ class ML_Post_Types {
 				'rewrite'         => array( 'slug' => 'matches' ),
 				'menu_icon'       => 'dashicons-calendar-alt',
 				'show_in_menu'    => false,
-				'supports'        => array( 'title', 'editor' ),
+				'supports'        => array( 'title' ),
 				'capability_type' => array( 'ml_match', 'ml_matches' ),
 				'capabilities'    => self::get_capabilities( 'match', 'matches' ),
 				'map_meta_cap'    => true,
 			)
 		);
+	}
+
+	/**
+	 * Disable block editor for MAHL data post types.
+	 *
+	 * @param bool   $use_block_editor Current block editor usage flag.
+	 * @param string $post_type        Post type name.
+	 *
+	 * @return bool
+	 */
+	public static function disable_block_editor( bool $use_block_editor, string $post_type ): bool {
+		if ( in_array( $post_type, array( 'ml_team', 'ml_player', 'ml_match' ), true ) ) {
+			return false;
+		}
+
+		return $use_block_editor;
 	}
 
 	/**
