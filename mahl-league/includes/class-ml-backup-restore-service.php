@@ -317,7 +317,7 @@ class ML_Backup_Restore_Service {
 		}
 
 		if ( is_int( $value ) ) {
-			return absint( $value );
+			return (int) $value;
 		}
 
 		if ( is_float( $value ) ) {
@@ -335,10 +335,10 @@ class ML_Backup_Restore_Service {
 					return sanitize_text_field( $value );
 				}
 
-				return absint( $trimmed );
+				return (int) $trimmed;
 			}
 
-			if ( is_numeric( $trimmed ) ) {
+			if ( preg_match( '/^-?\d+\.\d+$/', $trimmed ) || ( is_numeric( $trimmed ) && false !== strpos( $trimmed, '.' ) ) ) {
 				return (float) $trimmed;
 			}
 
