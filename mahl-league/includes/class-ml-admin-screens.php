@@ -612,6 +612,21 @@ class ML_Admin_Screens {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Match data has been saved.', 'mahl-league' ) . '</p></div>';
 		}
 
+		if ( isset( $_GET['ml_match_notice'] ) ) {
+			$notice_key = sanitize_key( wp_unslash( $_GET['ml_match_notice'] ) );
+			$messages   = array(
+				'nonce_failed'     => __( 'Security check failed. Please retry.', 'mahl-league' ),
+				'invalid_match'    => __( 'Invalid match selected.', 'mahl-league' ),
+				'capability_failed'=> __( 'You do not have permission to save this match.', 'mahl-league' ),
+				'validation_failed' => __( 'Validation failed: please select valid home and away teams.', 'mahl-league' ),
+				'save_failed'      => __( 'Unable to save match. Please try again.', 'mahl-league' ),
+			);
+
+			if ( isset( $messages[ $notice_key ] ) ) {
+				echo '<div class="notice notice-error"><p>' . esc_html( $messages[ $notice_key ] ) . '</p></div>';
+			}
+		}
+
 		echo '<form method="get" action="">';
 		echo '<input type="hidden" name="page" value="ml-match-editor" />';
 		echo '<label for="ml-match-id"><strong>' . esc_html__( 'Select Match', 'mahl-league' ) . '</strong></label> ';
@@ -653,7 +668,7 @@ class ML_Admin_Screens {
 		self::render_input_row( 'ml_round_label', __( 'Round Label', 'mahl-league' ), $current['round_label'] );
 		echo '</tbody></table>';
 
-		submit_button( __( 'Save Match', 'mahl-league' ), 'primary', 'submit', true, array( 'disabled' => $match_id <= 0 ) );
+		submit_button( __( 'Save Match', 'mahl-league' ), 'primary', 'submit', true );
 		echo '</form>';
 		echo '</div>';
 	}
@@ -672,48 +687,100 @@ class ML_Admin_Screens {
 	 * @return void
 	 */
 	public static function handle_match_editor_save(): void {
-		check_admin_referer( 'ml_save_match_editor', 'ml_match_editor_nonce' );
-
-		$match_id = isset( $_POST['match_id'] ) ? absint( wp_unslash( $_POST['match_id'] ) ) : 0;
-		if ( $match_id <= 0 || 'ml_match' !== get_post_type( $match_id ) ) {
-			wp_die( esc_html__( 'Invalid match selected.', 'mahl-league' ) );
+		if ( ! isset( $_POST['ml_match_editor_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ml_match_editor_nonce'] ) ), 'ml_save_match_editor' ) ) {
+			self::log_match_editor_error( 'nonce_failed' );
+			self::redirect_match_editor( 0, 'nonce_failed' );
 		}
 
-		if ( ! current_user_can( 'edit_post', $match_id ) && ! current_user_can( 'edit_ml_matches' ) ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		$match_id = isset( $_POST['match_id'] ) ? absint( wp_unslash( $_POST['match_id'] ) ) : 0;
+
+		if ( $match_id > 0 && 'ml_match' !== get_post_type( $match_id ) ) {
+			self::log_match_editor_error( 'invalid_match', array( 'match_id' => $match_id ) );
+			self::redirect_match_editor( 0, 'invalid_match' );
+		}
+
+		if ( $match_id > 0 ) {
+			if ( ! current_user_can( 'edit_post', $match_id ) && ! current_user_can( 'edit_ml_match' ) && ! current_user_can( 'edit_ml_matches' ) ) {
+				self::log_match_editor_error( 'capability_failed_existing', array( 'match_id' => $match_id ) );
+				self::redirect_match_editor( $match_id, 'capability_failed' );
+			}
+		} elseif ( ! current_user_can( 'publish_ml_matches' ) && ! current_user_can( 'edit_ml_matches' ) ) {
+			self::log_match_editor_error( 'capability_failed_create' );
+			self::redirect_match_editor( 0, 'capability_failed' );
+		}
+
+		$home_team_id = isset( $_POST['ml_home_team_id'] ) ? absint( wp_unslash( $_POST['ml_home_team_id'] ) ) : 0;
+		$away_team_id = isset( $_POST['ml_away_team_id'] ) ? absint( wp_unslash( $_POST['ml_away_team_id'] ) ) : 0;
+		if ( $home_team_id <= 0 || $away_team_id <= 0 || $home_team_id === $away_team_id ) {
+			self::log_match_editor_error( 'validation_failed_teams', array( 'home' => $home_team_id, 'away' => $away_team_id ) );
+			self::redirect_match_editor( $match_id, 'validation_failed' );
 		}
 
 		$allowed_statuses = array( 'scheduled', 'played', 'canceled' );
-
-		// TODO: Use self::sanitize_recursive() for future complex payloads (rosters/timeline arrays).
-		// Example: $payload = self::sanitize_recursive( wp_unslash( $_POST['ml_roster'] ) );
 		$status           = isset( $_POST['ml_status'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_status'] ) ) : 'scheduled';
 		if ( ! in_array( $status, $allowed_statuses, true ) ) {
 			$status = 'scheduled';
 		}
 
-		update_post_meta( $match_id, 'ml_home_team_id', isset( $_POST['ml_home_team_id'] ) ? absint( wp_unslash( $_POST['ml_home_team_id'] ) ) : 0 );
-		update_post_meta( $match_id, 'ml_away_team_id', isset( $_POST['ml_away_team_id'] ) ? absint( wp_unslash( $_POST['ml_away_team_id'] ) ) : 0 );
-		update_post_meta( $match_id, 'ml_match_datetime', isset( $_POST['ml_match_datetime'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_match_datetime'] ) ) : '' );
-		update_post_meta( $match_id, 'ml_venue', isset( $_POST['ml_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_venue'] ) ) : '' );
-		update_post_meta( $match_id, 'ml_referees', isset( $_POST['ml_referees'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_referees'] ) ) : '' );
+		$datetime    = isset( $_POST['ml_match_datetime'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_match_datetime'] ) ) : '';
+		$venue       = isset( $_POST['ml_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_venue'] ) ) : '';
+		$referees    = isset( $_POST['ml_referees'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_referees'] ) ) : '';
+		$home_score  = isset( $_POST['ml_home_score'] ) ? absint( wp_unslash( $_POST['ml_home_score'] ) ) : 0;
+		$away_score  = isset( $_POST['ml_away_score'] ) ? absint( wp_unslash( $_POST['ml_away_score'] ) ) : 0;
+		$stage_label = isset( $_POST['ml_stage_label'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_stage_label'] ) ) : '';
+		$round_label = isset( $_POST['ml_round_label'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_round_label'] ) ) : '';
+
+		if ( $match_id <= 0 ) {
+			$home_name   = (string) get_the_title( $home_team_id );
+			$away_name   = (string) get_the_title( $away_team_id );
+			$match_title = trim( $home_name . ' vs ' . $away_name );
+			if ( '' !== $datetime ) {
+				$match_title .= ' (' . $datetime . ')';
+			}
+
+			$inserted = wp_insert_post(
+				wp_slash(
+					array(
+						'post_type'   => 'ml_match',
+						'post_status' => 'publish',
+						'post_title'  => '' !== $match_title ? $match_title : __( 'New Match', 'mahl-league' ),
+					)
+				),
+				true
+			);
+
+			if ( is_wp_error( $inserted ) ) {
+				self::log_match_editor_error( 'insert_failed', array( 'error' => $inserted->get_error_message() ) );
+				self::redirect_match_editor( 0, 'save_failed' );
+			}
+
+			$match_id = absint( $inserted );
+		}
+
+		$updated_title = trim( (string) get_the_title( $home_team_id ) . ' vs ' . (string) get_the_title( $away_team_id ) );
+		if ( '' !== $updated_title ) {
+			wp_update_post(
+				wp_slash(
+					array(
+						'ID'         => $match_id,
+						'post_title' => $updated_title,
+					)
+				)
+			);
+		}
+
+		update_post_meta( $match_id, 'ml_home_team_id', $home_team_id );
+		update_post_meta( $match_id, 'ml_away_team_id', $away_team_id );
+		update_post_meta( $match_id, 'ml_match_datetime', $datetime );
+		update_post_meta( $match_id, 'ml_venue', $venue );
+		update_post_meta( $match_id, 'ml_referees', $referees );
 		update_post_meta( $match_id, 'ml_status', $status );
-		update_post_meta( $match_id, 'ml_home_score', isset( $_POST['ml_home_score'] ) ? absint( wp_unslash( $_POST['ml_home_score'] ) ) : 0 );
-		update_post_meta( $match_id, 'ml_away_score', isset( $_POST['ml_away_score'] ) ? absint( wp_unslash( $_POST['ml_away_score'] ) ) : 0 );
-		update_post_meta( $match_id, 'ml_stage_label', isset( $_POST['ml_stage_label'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_stage_label'] ) ) : '' );
-		update_post_meta( $match_id, 'ml_round_label', isset( $_POST['ml_round_label'] ) ? sanitize_text_field( wp_unslash( $_POST['ml_round_label'] ) ) : '' );
+		update_post_meta( $match_id, 'ml_home_score', $home_score );
+		update_post_meta( $match_id, 'ml_away_score', $away_score );
+		update_post_meta( $match_id, 'ml_stage_label', $stage_label );
+		update_post_meta( $match_id, 'ml_round_label', $round_label );
 
-		$redirect_url = add_query_arg(
-			array(
-				'page'       => 'ml-match-editor',
-				'match_id'   => $match_id,
-				'ml_updated' => 1,
-			),
-			admin_url( 'admin.php' )
-		);
-
-		wp_safe_redirect( $redirect_url );
-		exit;
+		self::redirect_match_editor( $match_id );
 	}
 
 	/**
@@ -1237,6 +1304,50 @@ class ML_Admin_Screens {
 			echo '<p><a class="button" href="' . esc_url( $error_link ) . '">' . esc_html__( 'Download error report CSV', 'mahl-league' ) . '</a></p>';
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * Redirect to Match Editor page.
+	 *
+	 * @param int    $match_id Match ID.
+	 * @param string $notice   Notice code.
+	 *
+	 * @return void
+	 */
+	private static function redirect_match_editor( int $match_id, string $notice = '' ): void {
+		$args = array(
+			'page' => 'ml-match-editor',
+		);
+
+		if ( $match_id > 0 ) {
+			$args['match_id'] = $match_id;
+		}
+
+		if ( '' !== $notice ) {
+			$args['ml_match_notice'] = sanitize_key( $notice );
+		} else {
+			$args['ml_updated'] = 1;
+		}
+
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
+	/**
+	 * Write Match Editor debug log when WP_DEBUG is enabled.
+	 *
+	 * @param string $event   Event name.
+	 * @param array  $context Extra context.
+	 *
+	 * @return void
+	 */
+	private static function log_match_editor_error( string $event, array $context = array() ): void {
+		if ( ! defined( 'WP_DEBUG' ) || true !== WP_DEBUG ) {
+			return;
+		}
+
+		$payload = wp_json_encode( $context );
+		error_log( '[MAHL League][Match Editor] ' . $event . ' ' . ( false !== $payload ? $payload : '' ) );
 	}
 
 	/**
