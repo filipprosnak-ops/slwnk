@@ -191,10 +191,95 @@ class ML_Admin_Screens {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
 		}
 
-		self::render_placeholder_screen(
-			__( 'Settings', 'mahl-league' ),
-			__( 'Plugin settings will be expanded in future phases.', 'mahl-league' )
-		);
+		$required_pages = ML_Pages_Service::get_required_pages();
+		$pages_map      = ML_Pages_Service::get_pages_map();
+
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html__( 'Settings', 'mahl-league' ) . '</h1>';
+		echo '<h2>' . esc_html__( 'Pages', 'mahl-league' ) . '</h2>';
+
+		if ( isset( $_GET['ml_pages_repaired'] ) && '1' === wp_unslash( $_GET['ml_pages_repaired'] ) ) {
+			echo '<div class="notice notice-success"><p>' . esc_html__( 'Pages were created/repaired.', 'mahl-league' ) . '</p></div>';
+		}
+
+		echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Slug', 'mahl-league' ) . '</th><th>' . esc_html__( 'Status', 'mahl-league' ) . '</th><th>' . esc_html__( 'Page ID', 'mahl-league' ) . '</th><th>' . esc_html__( 'Links', 'mahl-league' ) . '</th></tr></thead><tbody>';
+		foreach ( $required_pages as $slug => $def ) {
+			$page = get_page_by_path( $slug, OBJECT, 'page' );
+			echo '<tr>';
+			echo '<td>' . esc_html( $slug ) . '</td>';
+			echo '<td>' . esc_html( $page instanceof WP_Post ? __( 'Exists', 'mahl-league' ) : __( 'Missing', 'mahl-league' ) ) . '</td>';
+			echo '<td>' . esc_html( (string) ( $page instanceof WP_Post ? $page->ID : ( isset( $pages_map[ $slug ] ) ? absint( $pages_map[ $slug ] ) : 0 ) ) ) . '</td>';
+			echo '<td>';
+			if ( $page instanceof WP_Post ) {
+				echo '<a href="' . esc_url( get_edit_post_link( $page->ID ) ) . '">' . esc_html__( 'Edit', 'mahl-league' ) . '</a> | ';
+				echo '<a href="' . esc_url( get_permalink( $page->ID ) ) . '" target="_blank" rel="noopener">' . esc_html__( 'View', 'mahl-league' ) . '</a>';
+			} else {
+				echo '&mdash;';
+			}
+			echo '</td>';
+			echo '</tr>';
+		}
+		echo '</tbody></table>';
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin-top:16px;">';
+		echo '<input type="hidden" name="action" value="ml_create_repair_pages" />';
+		wp_nonce_field( 'ml_create_repair_pages', 'ml_pages_nonce' );
+		submit_button( __( 'Create/Repair Pages', 'mahl-league' ), 'secondary', 'submit', false );
+		echo '</form>';
+		echo '</div>';
+	}
+
+	/**
+	 * Render IDs screen.
+	 *
+	 * @return void
+	 */
+	public static function render_ids(): void {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+		echo '<div class="wrap"><h1>' . esc_html__( 'IDs', 'mahl-league' ) . '</h1>';
+		echo '<script>function mlCopyId(v){navigator.clipboard&&navigator.clipboard.writeText(String(v));}</script>';
+		self::render_ids_table( 'ml_team', __( 'Teams', 'mahl-league' ) );
+		self::render_ids_table( 'ml_player', __( 'Players', 'mahl-league' ) );
+		self::render_ids_table( 'ml_match', __( 'Matches', 'mahl-league' ) );
+		self::render_term_ids_table( 'ml_season', __( 'Seasons', 'mahl-league' ) );
+		self::render_term_ids_table( 'ml_competition', __( 'Competitions', 'mahl-league' ) );
+		self::render_term_ids_table( 'ml_phase', __( 'Phases', 'mahl-league' ) );
+		echo '<h2>' . esc_html__( 'Plugin Pages', 'mahl-league' ) . '</h2><ul>';
+		foreach ( ML_Pages_Service::get_required_pages() as $slug => $def ) {
+			$page = get_page_by_path( $slug, OBJECT, 'page' );
+			echo '<li>' . esc_html( $slug ) . ': ' . esc_html( (string) ( $page instanceof WP_Post ? $page->ID : 0 ) ) . '</li>';
+		}
+		echo '</ul></div>';
+	}
+
+	/**
+	 * Render backup/restore screen.
+	 *
+	 * @return void
+	 */
+	public static function render_backup_restore(): void {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'mahl-league' ) );
+		}
+		echo '<div class="wrap"><h1>' . esc_html__( 'Backup / Restore', 'mahl-league' ) . '</h1>';
+		if ( isset( $_GET['ml_restore_done'] ) && '1' === wp_unslash( $_GET['ml_restore_done'] ) ) {
+			echo '<div class="notice notice-success"><p>' . esc_html__( 'Restore completed.', 'mahl-league' ) . '</p></div>';
+		}
+		echo '<h2>' . esc_html__( 'Export', 'mahl-league' ) . '</h2>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="ml_export_backup" />';
+		wp_nonce_field( 'ml_export_backup', 'ml_backup_export_nonce' );
+		submit_button( __( 'Download JSON Backup', 'mahl-league' ), 'secondary', 'submit', false );
+		echo '</form>';
+		echo '<h2>' . esc_html__( 'Restore', 'mahl-league' ) . '</h2>';
+		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="ml_restore_backup" />';
+		wp_nonce_field( 'ml_restore_backup', 'ml_backup_restore_nonce' );
+		echo '<input type="file" name="backup_file" accept="application/json,.json" required />';
+		submit_button( __( 'Restore from JSON', 'mahl-league' ), 'primary', 'submit', false );
+		echo '</form></div>';
 	}
 
 	/**
@@ -504,6 +589,140 @@ class ML_Admin_Screens {
 		}
 
 		self::send_csv_response( 'import-errors-' . gmdate( 'Ymd-His' ), $rows );
+	}
+
+
+	/**
+	 * Handle create/repair pages action.
+	 *
+	 * @return void
+	 */
+	public static function handle_create_repair_pages(): void {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+		check_admin_referer( 'ml_create_repair_pages', 'ml_pages_nonce' );
+		ML_Pages_Service::ensure_pages( true );
+		$redirect_url = add_query_arg(
+			array(
+				'page' => 'ml-settings',
+				'ml_pages_repaired' => 1,
+			),
+			admin_url( 'admin.php' )
+		);
+		wp_safe_redirect( $redirect_url );
+		exit;
+	}
+
+	/**
+	 * Handle backup export.
+	 *
+	 * @return void
+	 */
+	public static function handle_export_backup(): void {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+		check_admin_referer( 'ml_export_backup', 'ml_backup_export_nonce' );
+		$payload = ML_Backup_Restore_Service::export_data();
+		nocache_headers();
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=mahl-league-backup-' . gmdate( 'Ymd-His' ) . '.json' );
+		echo wp_json_encode( $payload );
+		exit;
+	}
+
+	/**
+	 * Handle backup restore.
+	 *
+	 * @return void
+	 */
+	public static function handle_restore_backup(): void {
+		if ( ! current_user_can( 'manage_ml_league' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'mahl-league' ) );
+		}
+		check_admin_referer( 'ml_restore_backup', 'ml_backup_restore_nonce' );
+		if ( empty( $_FILES['backup_file']['name'] ) ) {
+			self::redirect_backup_screen();
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		$upload = wp_handle_upload(
+			$_FILES['backup_file'],
+			array(
+				'test_form' => false,
+				'mimes'     => array( 'json' => 'application/json' ),
+			)
+		);
+		if ( isset( $upload['error'] ) ) {
+			self::redirect_backup_screen();
+		}
+
+		$content = file_get_contents( (string) $upload['file'] );
+		if ( false === $content ) {
+			self::redirect_backup_screen();
+		}
+		$payload = json_decode( $content, true );
+		if ( ! is_array( $payload ) ) {
+			self::redirect_backup_screen();
+		}
+		ML_Backup_Restore_Service::restore_data( $payload );
+		$redirect_url = add_query_arg(
+			array(
+				'page' => 'ml-backup-restore',
+				'ml_restore_done' => 1,
+			),
+			admin_url( 'admin.php' )
+		);
+		wp_safe_redirect( $redirect_url );
+		exit;
+	}
+
+	/**
+	 * Render CPT ID table.
+	 *
+	 * @param string $post_type Post type.
+	 * @param string $title     Title.
+	 *
+	 * @return void
+	 */
+	private static function render_ids_table( string $post_type, string $title ): void {
+		$items = get_posts( array( 'post_type' => $post_type, 'post_status' => 'any', 'posts_per_page' => 200, 'orderby' => 'title', 'order' => 'ASC' ) );
+		echo '<h2>' . esc_html( $title ) . '</h2><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Title', 'mahl-league' ) . '</th><th>ID</th><th>' . esc_html__( 'Edit', 'mahl-league' ) . '</th></tr></thead><tbody>';
+		foreach ( $items as $item ) {
+			echo '<tr><td>' . esc_html( $item->post_title ) . '</td><td>' . esc_html( (string) $item->ID ) . ' <button type="button" class="button button-small" onclick="mlCopyId(' . esc_attr( (string) $item->ID ) . ')">' . esc_html__( 'Copy', 'mahl-league' ) . '</button></td><td><a href="' . esc_url( get_edit_post_link( $item->ID ) ) . '">' . esc_html__( 'Edit', 'mahl-league' ) . '</a></td></tr>';
+		}
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * Render taxonomy ID table.
+	 *
+	 * @param string $taxonomy Taxonomy.
+	 * @param string $title    Title.
+	 *
+	 * @return void
+	 */
+	private static function render_term_ids_table( string $taxonomy, string $title ): void {
+		$terms = get_terms( array( 'taxonomy' => $taxonomy, 'hide_empty' => false ) );
+		echo '<h2>' . esc_html( $title ) . '</h2><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Name', 'mahl-league' ) . '</th><th>' . esc_html__( 'Term ID', 'mahl-league' ) . '</th></tr></thead><tbody>';
+		if ( is_array( $terms ) ) {
+			foreach ( $terms as $term ) {
+				echo '<tr><td>' . esc_html( $term->name ) . '</td><td>' . esc_html( (string) $term->term_id ) . '</td></tr>';
+			}
+		}
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * Redirect to backup screen.
+	 *
+	 * @return void
+	 */
+	private static function redirect_backup_screen(): void {
+		$redirect_url = add_query_arg( array( 'page' => 'ml-backup-restore' ), admin_url( 'admin.php' ) );
+		wp_safe_redirect( $redirect_url );
+		exit;
 	}
 
 	/**

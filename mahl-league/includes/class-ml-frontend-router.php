@@ -59,21 +59,6 @@ class ML_Frontend_Router {
 			return self::template_path( 'archive-ml_match.php', $template );
 		}
 
-		if ( is_page( 'results' ) ) {
-			return self::template_path( 'page-results.php', $template );
-		}
-
-		if ( is_page( 'standings' ) ) {
-			return self::template_path( 'page-standings.php', $template );
-		}
-
-		if ( is_page( 'stats' ) ) {
-			return self::template_path( 'page-stats.php', $template );
-		}
-
-		if ( is_page( 'playoffs' ) ) {
-			return self::template_path( 'page-playoffs.php', $template );
-		}
 
 		return $template;
 	}
@@ -87,10 +72,7 @@ class ML_Frontend_Router {
 	private static function is_league_view(): bool {
 		return is_post_type_archive( 'ml_team' )
 			|| is_post_type_archive( 'ml_match' )
-			|| is_page( 'results' )
-			|| is_page( 'standings' )
-			|| is_page( 'stats' )
-			|| is_page( 'playoffs' );
+			|| is_page( array( 'timy', 'zapasy', 'vysledky', 'tabulky', 'statistiky', 'play-off' ) );
 	}
 
 	/**

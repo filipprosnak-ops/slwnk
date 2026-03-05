@@ -25,6 +25,9 @@ class ML_Admin_Menu {
 		add_action( 'admin_post_ml_import_csv', array( ML_Admin_Screens::class, 'handle_import_csv' ) );
 		add_action( 'admin_post_ml_export_csv', array( ML_Admin_Screens::class, 'handle_export_csv' ) );
 		add_action( 'admin_post_ml_import_errors_csv', array( ML_Admin_Screens::class, 'handle_import_errors_csv' ) );
+		add_action( 'admin_post_ml_create_repair_pages', array( ML_Admin_Screens::class, 'handle_create_repair_pages' ) );
+		add_action( 'admin_post_ml_export_backup', array( ML_Admin_Screens::class, 'handle_export_backup' ) );
+		add_action( 'admin_post_ml_restore_backup', array( ML_Admin_Screens::class, 'handle_restore_backup' ) );
 	}
 
 	/**
@@ -119,6 +122,25 @@ class ML_Admin_Menu {
 			'manage_ml_league',
 			'ml-import-export',
 			array( ML_Admin_Screens::class, 'render_import_export' )
+		);
+
+
+		add_submenu_page(
+			'ml-dashboard',
+			__( 'IDs', 'mahl-league' ),
+			__( 'IDs', 'mahl-league' ),
+			'manage_ml_league',
+			'ml-ids',
+			array( ML_Admin_Screens::class, 'render_ids' )
+		);
+
+		add_submenu_page(
+			'ml-dashboard',
+			__( 'Backup / Restore', 'mahl-league' ),
+			__( 'Backup / Restore', 'mahl-league' ),
+			'manage_ml_league',
+			'ml-backup-restore',
+			array( ML_Admin_Screens::class, 'render_backup_restore' )
 		);
 
 		add_submenu_page(

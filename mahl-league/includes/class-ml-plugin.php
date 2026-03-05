@@ -44,13 +44,15 @@ class ML_Plugin {
 		add_action( 'init', array( ML_Taxonomies::class, 'register' ) );
 
 		ML_Stats_Engine::register();
+		ML_Shortcodes::register();
 		self::add_capabilities();
 
 		if ( is_admin() ) {
 			ML_Admin_Menu::register();
-		} else {
-			ML_Frontend_Router::register();
+			ML_ID_Utils::register();
 		}
+
+		ML_Frontend_Router::register();
 	}
 
 	/**
@@ -62,6 +64,7 @@ class ML_Plugin {
 		ML_Post_Types::register();
 		ML_Taxonomies::register();
 		self::add_capabilities();
+		ML_Pages_Service::ensure_pages( false );
 		flush_rewrite_rules();
 	}
 
