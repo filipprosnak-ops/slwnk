@@ -304,11 +304,51 @@ class ML_Backup_Restore_Service {
 			foreach ( $value as $key => $item ) {
 				$sanitized[ sanitize_key( (string) $key ) ] = self::sanitize_recursive( $item );
 			}
+
 			return $sanitized;
 		}
+
+		if ( is_bool( $value ) ) {
+			return (bool) $value;
+		}
+
+		if ( null === $value ) {
+			return null;
+		}
+
+		if ( is_int( $value ) ) {
+			return absint( $value );
+		}
+
+		if ( is_float( $value ) ) {
+			return (float) $value;
+		}
+
+		if ( is_string( $value ) ) {
+			$trimmed = trim( $value );
+			if ( '' === $trimmed ) {
+				return '';
+			}
+
+			if ( preg_match( '/^-?\d+$/', $trimmed ) ) {
+				if ( preg_match( '/^0\d+$/', $trimmed ) || preg_match( '/^-0\d+$/', $trimmed ) ) {
+					return sanitize_text_field( $value );
+				}
+
+				return absint( $trimmed );
+			}
+
+			if ( is_numeric( $trimmed ) ) {
+				return (float) $trimmed;
+			}
+
+			return sanitize_text_field( $value );
+		}
+
 		if ( is_scalar( $value ) ) {
 			return sanitize_text_field( (string) $value );
 		}
+
 		return '';
 	}
 }

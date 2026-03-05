@@ -330,7 +330,7 @@ class ML_Import_Export_Service {
 	 */
 	public static function upsert_player( array $row, bool $dry_run ): array {
 		$name    = isset( $row['name'] ) ? sanitize_text_field( $row['name'] ) : '';
-		$team_id = self::resolve_team_from_row( $row, '' );
+		$team_id = self::resolve_player_team_from_row( $row );
 		if ( '' === $name ) {
 			return array( 'error' => __( 'Player name is required.', 'mahl-league' ) );
 		}
@@ -643,6 +643,24 @@ class ML_Import_Export_Service {
 		}
 
 		return self::upsert_match( $row, $dry_run );
+	}
+
+
+	/**
+	 * Resolve player team using player CSV keys only.
+	 *
+	 * @param array $row Row data.
+	 *
+	 * @return int
+	 */
+	private static function resolve_player_team_from_row( array $row ): int {
+		$team_row = array(
+			'external_id' => isset( $row['team_external_id'] ) ? sanitize_text_field( $row['team_external_id'] ) : '',
+			'slug'        => isset( $row['team_slug'] ) ? sanitize_title( $row['team_slug'] ) : '',
+			'name'        => isset( $row['team_name'] ) ? sanitize_text_field( $row['team_name'] ) : '',
+		);
+
+		return self::resolve_team_from_row( $team_row, '' );
 	}
 
 	/**
