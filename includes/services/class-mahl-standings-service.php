@@ -22,20 +22,65 @@ class MAHL_Standings_Service extends MAHL_Base_Service {
 	const COMPLETED_GAME_STATUS = 'final';
 
 	/**
-	 * Calculate standings for a competition context.
+	 * Return normalized standings data for a competition context.
 	 *
-	 * @param int    $season_id Season post ID.
-	 * @param int    $phase_id Optional phase post ID.
-	 * @param string $group_key Optional normalized group or bracket key.
+	 * Returned structure:
+	 *
+	 * array(
+	 *     'context' => array(
+	 *         'season_id'   => (int),
+	 *         'phase_id'    => (int),
+	 *         'group_key'   => (string),
+	 *         'point_rules' => array(
+	 *             'win_points'  => (int),
+	 *             'draw_points' => (int),
+	 *             'loss_points' => (int),
+	 *         ),
+	 *         'game_count'   => (int),
+	 *     ),
+	 *     'rows' => array(
+	 *         array(
+	 *             'position'        => (int),
+	 *             'team_id'         => (int),
+	 *             'team_name'       => (string),
+	 *             'games_played'    => (int),
+	 *             'wins'            => (int),
+	 *             'draws'           => (int),
+	 *             'losses'          => (int),
+	 *             'goals_for'       => (int),
+	 *             'goals_against'   => (int),
+	 *             'goal_difference' => (int),
+	 *             'points'          => (int),
+	 *         ),
+	 *     ),
+	 * )
+	 *
+	 * @param array $args {
+	 *     Optional. Standings query arguments.
+	 *
+	 *     @type int    $season_id Required season post ID.
+	 *     @type int    $phase_id  Optional phase post ID.
+	 *     @type string $group_key Optional normalized group or bracket key.
+	 * }
 	 * @return array
 	 */
-	public function calculate_standings( $season_id, $phase_id = 0, $group_key = '' ) {
-		$season_id = absint( $season_id );
-		$phase_id  = absint( $phase_id );
-		$group_key = sanitize_key( $group_key );
+	public function get_standings( $args = array() ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'season_id' => 0,
+				'phase_id'  => 0,
+				'group_key' => '',
+			)
+		);
+
+		$season_id = absint( $args['season_id'] );
+		$phase_id  = absint( $args['phase_id'] );
+		$group_key = sanitize_key( $args['group_key'] );
+		$response  = $this->get_empty_standings_response( $season_id, $phase_id, $group_key );
 
 		if ( empty( $season_id ) ) {
-			return array();
+			return $response;
 		}
 
 		$point_rules = $this->get_point_rules();
@@ -56,7 +101,33 @@ class MAHL_Standings_Service extends MAHL_Base_Service {
 			$this->apply_result_points( $standings[ $game_data['home_team_id'] ], $standings[ $game_data['away_team_id'] ], $game_data, $point_rules );
 		}
 
-		return $this->sort_standings( $standings );
+		$response['context']['point_rules'] = $point_rules;
+		$response['context']['game_count']  = count( $games );
+		$response['rows']                   = $this->add_positions_to_rows( $this->sort_standings( $standings ) );
+
+		return $response;
+	}
+
+	/**
+	 * Calculate standings rows for a competition context.
+	 *
+	 * This remains as a convenience wrapper for callers that only need rows.
+	 *
+	 * @param int    $season_id Season post ID.
+	 * @param int    $phase_id Optional phase post ID.
+	 * @param string $group_key Optional normalized group or bracket key.
+	 * @return array
+	 */
+	public function calculate_standings( $season_id, $phase_id = 0, $group_key = '' ) {
+		$standings = $this->get_standings(
+			array(
+				'season_id' => $season_id,
+				'phase_id'  => $phase_id,
+				'group_key' => $group_key,
+			)
+		);
+
+		return $standings['rows'];
 	}
 
 	/**
@@ -311,6 +382,41 @@ class MAHL_Standings_Service extends MAHL_Base_Service {
 		);
 
 		return $sorted_rows;
+	}
+
+	/**
+	 * Return the default standings response structure.
+	 *
+	 * @param int    $season_id Season post ID.
+	 * @param int    $phase_id Phase post ID.
+	 * @param string $group_key Normalized group key.
+	 * @return array
+	 */
+	protected function get_empty_standings_response( $season_id, $phase_id, $group_key ) {
+		return array(
+			'context' => array(
+				'season_id'   => $season_id,
+				'phase_id'    => $phase_id,
+				'group_key'   => $group_key,
+				'point_rules' => $this->get_point_rules(),
+				'game_count'  => 0,
+			),
+			'rows'    => array(),
+		);
+	}
+
+	/**
+	 * Add 1-based position values to ordered standings rows.
+	 *
+	 * @param array $rows Sorted standings rows.
+	 * @return array
+	 */
+	protected function add_positions_to_rows( $rows ) {
+		foreach ( $rows as $index => $row ) {
+			$rows[ $index ]['position'] = $index + 1;
+		}
+
+		return $rows;
 	}
 
 	/**
