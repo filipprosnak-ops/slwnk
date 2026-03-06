@@ -127,17 +127,17 @@ get_header();
 					<table class="mahl-table mahl-table--period-scores">
 						<thead>
 							<tr>
-								<th><?php esc_html_e( 'Period', 'mahl-manager' ); ?></th>
-								<th><?php echo esc_html( ! empty( $data['home_team'] ) ? $data['home_team']['title'] : __( 'Home', 'mahl-manager' ) ); ?></th>
-								<th><?php echo esc_html( ! empty( $data['away_team'] ) ? $data['away_team']['title'] : __( 'Away', 'mahl-manager' ) ); ?></th>
+								<th class="mahl-table__cell mahl-table__cell--label"><?php esc_html_e( 'Period', 'mahl-manager' ); ?></th>
+								<th class="mahl-table__cell mahl-table__cell--team"><?php echo esc_html( ! empty( $data['home_team'] ) ? $data['home_team']['title'] : __( 'Home', 'mahl-manager' ) ); ?></th>
+								<th class="mahl-table__cell mahl-table__cell--team"><?php echo esc_html( ! empty( $data['away_team'] ) ? $data['away_team']['title'] : __( 'Away', 'mahl-manager' ) ); ?></th>
 							</tr>
 						</thead>
 						<tbody>
 							<?php foreach ( $data['period_scores'] as $score_row ) : ?>
 								<tr>
-									<td><?php echo esc_html( $score_row['label'] ); ?></td>
-									<td><?php echo esc_html( null !== $score_row['home_score'] ? $score_row['home_score'] : '-' ); ?></td>
-									<td><?php echo esc_html( null !== $score_row['away_score'] ? $score_row['away_score'] : '-' ); ?></td>
+									<td class="mahl-table__cell mahl-table__cell--label"><?php echo esc_html( $score_row['label'] ); ?></td>
+									<td class="mahl-table__cell"><?php echo esc_html( null !== $score_row['home_score'] ? $score_row['home_score'] : '-' ); ?></td>
+									<td class="mahl-table__cell"><?php echo esc_html( null !== $score_row['away_score'] ? $score_row['away_score'] : '-' ); ?></td>
 								</tr>
 							<?php endforeach; ?>
 						</tbody>

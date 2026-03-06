@@ -36,10 +36,26 @@ class MAHL_Frontend {
 	 * @return void
 	 */
 	public function register() {
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+
 		foreach ( $this->modules as $module ) {
 			if ( is_object( $module ) && method_exists( $module, 'register' ) ) {
 				$module->register();
 			}
 		}
+	}
+
+	/**
+	 * Enqueue frontend assets.
+	 *
+	 * @return void
+	 */
+	public function enqueue_assets() {
+		wp_enqueue_style(
+			'mahl-manager-frontend',
+			MAHL_MANAGER_URL . 'assets/css/frontend.css',
+			array(),
+			MAHL_MANAGER_VERSION
+		);
 	}
 }

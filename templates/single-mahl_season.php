@@ -111,31 +111,31 @@ get_header();
 							<table class="mahl-table mahl-table--standings">
 							<thead>
 								<tr>
-									<th><?php esc_html_e( '#', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'Team', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'GP', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'W', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'D', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'L', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'GF', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'GA', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'GD', 'mahl-manager' ); ?></th>
-									<th><?php esc_html_e( 'Pts', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell mahl-table__cell--position"><?php esc_html_e( '#', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell mahl-table__cell--team"><?php esc_html_e( 'Team', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell"><?php esc_html_e( 'GP', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell"><?php esc_html_e( 'W', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell"><?php esc_html_e( 'D', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell"><?php esc_html_e( 'L', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell"><?php esc_html_e( 'GF', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell"><?php esc_html_e( 'GA', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell"><?php esc_html_e( 'GD', 'mahl-manager' ); ?></th>
+									<th class="mahl-table__cell mahl-table__cell--points"><?php esc_html_e( 'Pts', 'mahl-manager' ); ?></th>
 								</tr>
 							</thead>
 							<tbody>
 								<?php foreach ( $section['rows'] as $row ) : ?>
 									<tr class="mahl-table__row">
-										<td><?php echo esc_html( $row['position'] ); ?></td>
-										<td><a href="<?php echo esc_url( get_permalink( $row['team_id'] ) ); ?>"><?php echo esc_html( $row['team_name'] ); ?></a></td>
-										<td><?php echo esc_html( $row['games_played'] ); ?></td>
-										<td><?php echo esc_html( $row['wins'] ); ?></td>
-										<td><?php echo esc_html( $row['draws'] ); ?></td>
-										<td><?php echo esc_html( $row['losses'] ); ?></td>
-										<td><?php echo esc_html( $row['goals_for'] ); ?></td>
-										<td><?php echo esc_html( $row['goals_against'] ); ?></td>
-										<td><?php echo esc_html( $row['goal_difference'] ); ?></td>
-										<td><?php echo esc_html( $row['points'] ); ?></td>
+										<td class="mahl-table__cell mahl-table__cell--position"><?php echo esc_html( $row['position'] ); ?></td>
+										<td class="mahl-table__cell mahl-table__cell--team"><a href="<?php echo esc_url( get_permalink( $row['team_id'] ) ); ?>"><?php echo esc_html( $row['team_name'] ); ?></a></td>
+										<td class="mahl-table__cell"><?php echo esc_html( $row['games_played'] ); ?></td>
+										<td class="mahl-table__cell"><?php echo esc_html( $row['wins'] ); ?></td>
+										<td class="mahl-table__cell"><?php echo esc_html( $row['draws'] ); ?></td>
+										<td class="mahl-table__cell"><?php echo esc_html( $row['losses'] ); ?></td>
+										<td class="mahl-table__cell"><?php echo esc_html( $row['goals_for'] ); ?></td>
+										<td class="mahl-table__cell"><?php echo esc_html( $row['goals_against'] ); ?></td>
+										<td class="mahl-table__cell"><?php echo esc_html( $row['goal_difference'] ); ?></td>
+										<td class="mahl-table__cell mahl-table__cell--points"><?php echo esc_html( $row['points'] ); ?></td>
 									</tr>
 								<?php endforeach; ?>
 							</tbody>
