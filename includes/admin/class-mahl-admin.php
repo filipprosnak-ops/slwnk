@@ -29,6 +29,7 @@ class MAHL_Admin {
 			new MAHL_Settings_Admin(),
 			new MAHL_Relationships_Admin(),
 			new MAHL_Game_Meta_Admin(),
+			new MAHL_Game_Player_Events_Admin(),
 		);
 	}
 

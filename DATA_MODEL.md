@@ -47,6 +47,39 @@ Game Fields:
 - score_away_shootout
 - notes
 
+Game player data:
+- player_appearances
+- game_events
+
+Player appearances structure:
+- stored per game as normalized rows
+- each row contains:
+  - team_id
+  - player_id
+
+Game events structure:
+- stored per game as normalized event rows
+- each event contains:
+  - event_type
+  - team_id
+  - period_number
+  - event_order
+  - participants
+  - penalty_minutes
+  - notes
+
+Participant roles:
+- scorer
+- assist
+- penalized_player
+
+Player statistics source:
+- games_played derived from player appearances and validated event participants
+- goals derived from goal events with scorer role
+- assists derived from goal events with assist role
+- penalty_minutes derived from penalty events
+- points derived as goals + assists
+
 Player statistics:
 - games_played
 - goals
