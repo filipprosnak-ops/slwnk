@@ -43,7 +43,7 @@ abstract class MAHL_Base_Post_Type {
 			'public'             => true,
 			'publicly_queryable' => true,
 			'show_ui'            => true,
-			'show_in_menu'       => true,
+			'show_in_menu'       => $this->get_menu_parent(),
 			'show_in_nav_menus'  => true,
 			'show_in_rest'       => true,
 			'has_archive'        => $this->get_archive_slug(),
@@ -170,6 +170,15 @@ abstract class MAHL_Base_Post_Type {
 	 */
 	protected function get_menu_icon() {
 		return 'dashicons-admin-post';
+	}
+
+	/**
+	 * Return the parent admin menu slug.
+	 *
+	 * @return string|bool
+	 */
+	protected function get_menu_parent() {
+		return 'mahl-manager';
 	}
 
 	/**

@@ -60,6 +60,7 @@ class MAHL_Autoloader {
 			'MAHL_Base_Service'         => 'includes/services/class-mahl-base-service.php',
 			'MAHL_Season_Service'       => 'includes/services/class-mahl-season-service.php',
 			'MAHL_Phase_Service'        => 'includes/services/class-mahl-phase-service.php',
+			'MAHL_Settings_Service'     => 'includes/services/class-mahl-settings-service.php',
 			'MAHL_Team_Service'         => 'includes/services/class-mahl-team-service.php',
 			'MAHL_Game_Service'         => 'includes/services/class-mahl-game-service.php',
 			'MAHL_Standings_Service'    => 'includes/services/class-mahl-standings-service.php',
@@ -67,6 +68,7 @@ class MAHL_Autoloader {
 			'MAHL_Admin'                => 'includes/admin/class-mahl-admin.php',
 			'MAHL_Relationships_Admin'  => 'includes/admin/class-mahl-relationships-admin.php',
 			'MAHL_Game_Meta_Admin'      => 'includes/admin/class-mahl-game-meta-admin.php',
+			'MAHL_Settings_Admin'       => 'includes/admin/class-mahl-settings-admin.php',
 			'MAHL_Frontend'             => 'includes/frontend/class-mahl-frontend.php',
 		);
 	}

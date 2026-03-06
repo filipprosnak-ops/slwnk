@@ -77,6 +77,7 @@ class MAHL_Plugin {
 		$this->services = array(
 			new MAHL_Season_Service(),
 			new MAHL_Phase_Service(),
+			new MAHL_Settings_Service(),
 			new MAHL_Team_Service(),
 			new MAHL_Game_Service(),
 			new MAHL_Standings_Service(),
