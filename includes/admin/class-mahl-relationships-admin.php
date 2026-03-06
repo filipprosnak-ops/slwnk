@@ -112,10 +112,7 @@ class MAHL_Relationships_Admin {
 				continue;
 			}
 
-			if ( '_mahl_away_team_id' === $field['meta_key']
-				&& ! empty( $values['_mahl_home_team_id'] )
-				&& $value === $values['_mahl_home_team_id']
-			) {
+			if ( ! $this->passes_context_validation( $post_type, $field['meta_key'], $value, $values ) ) {
 				delete_post_meta( $post_id, $field['meta_key'] );
 				continue;
 			}
@@ -217,6 +214,15 @@ class MAHL_Relationships_Admin {
 	 */
 	protected function get_fields_for_post_type( $post_type ) {
 		$configurations = array(
+			'mahl_phase'  => array(
+				array(
+					'meta_key'          => '_mahl_season_id',
+					'label'             => __( 'Season', 'mahl-manager' ),
+					'placeholder'       => __( 'Select a season', 'mahl-manager' ),
+					'description'       => __( 'Choose the season this phase belongs to.', 'mahl-manager' ),
+					'related_post_type' => 'mahl_season',
+				),
+			),
 			'mahl_team'   => array(
 				array(
 					'meta_key'          => '_mahl_season_id',
@@ -244,17 +250,24 @@ class MAHL_Relationships_Admin {
 					'related_post_type' => 'mahl_season',
 				),
 				array(
+					'meta_key'          => '_mahl_phase_id',
+					'label'             => __( 'Phase', 'mahl-manager' ),
+					'placeholder'       => __( 'Select a phase', 'mahl-manager' ),
+					'description'       => __( 'Choose the phase this game belongs to. The selected phase should belong to the same season.', 'mahl-manager' ),
+					'related_post_type' => 'mahl_phase',
+				),
+				array(
 					'meta_key'          => '_mahl_home_team_id',
 					'label'             => __( 'Home Team', 'mahl-manager' ),
 					'placeholder'       => __( 'Select a home team', 'mahl-manager' ),
-					'description'       => __( 'Choose the home team for this game.', 'mahl-manager' ),
+					'description'       => __( 'Choose the home team for this game. The selected team should belong to the same season.', 'mahl-manager' ),
 					'related_post_type' => 'mahl_team',
 				),
 				array(
 					'meta_key'          => '_mahl_away_team_id',
 					'label'             => __( 'Away Team', 'mahl-manager' ),
 					'placeholder'       => __( 'Select an away team', 'mahl-manager' ),
-					'description'       => __( 'Choose the away team for this game.', 'mahl-manager' ),
+					'description'       => __( 'Choose the away team for this game. The selected team should belong to the same season.', 'mahl-manager' ),
 					'related_post_type' => 'mahl_team',
 				),
 			),
@@ -270,6 +283,12 @@ class MAHL_Relationships_Admin {
 	 */
 	protected function get_meta_box_configurations() {
 		return array(
+			'mahl_phase'  => array(
+				'id'       => 'mahl-phase-relationships',
+				'title'    => __( 'Season Relationship', 'mahl-manager' ),
+				'context'  => 'side',
+				'priority' => 'default',
+			),
 			'mahl_team'   => array(
 				'id'       => 'mahl-team-relationships',
 				'title'    => __( 'Season Relationship', 'mahl-manager' ),
@@ -284,7 +303,7 @@ class MAHL_Relationships_Admin {
 			),
 			'mahl_game'   => array(
 				'id'       => 'mahl-game-relationships',
-				'title'    => __( 'Game Relationships', 'mahl-manager' ),
+				'title'    => __( 'Competition Relationships', 'mahl-manager' ),
 				'context'  => 'side',
 				'priority' => 'default',
 			),
@@ -337,5 +356,48 @@ class MAHL_Relationships_Admin {
 		}
 
 		return $expected_post_type === get_post_type( $related_post_id );
+	}
+
+	/**
+	 * Validate relationship context rules for a post type.
+	 *
+	 * @param string $post_type Current post type.
+	 * @param string $meta_key Meta key being saved.
+	 * @param int    $value Submitted related post ID.
+	 * @param array  $values Submitted relationship values.
+	 * @return bool
+	 */
+	protected function passes_context_validation( $post_type, $meta_key, $value, $values ) {
+		if ( 'mahl_game' !== $post_type ) {
+			return true;
+		}
+
+		if ( '_mahl_away_team_id' === $meta_key
+			&& ! empty( $values['_mahl_home_team_id'] )
+			&& $value === $values['_mahl_home_team_id']
+		) {
+			return false;
+		}
+
+		if ( empty( $values['_mahl_season_id'] ) ) {
+			return true;
+		}
+
+		if ( '_mahl_phase_id' === $meta_key || '_mahl_home_team_id' === $meta_key || '_mahl_away_team_id' === $meta_key ) {
+			return $this->related_post_matches_season( $value, $values['_mahl_season_id'] );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check whether a related post belongs to a given season.
+	 *
+	 * @param int $related_post_id Related post ID.
+	 * @param int $season_id Season post ID.
+	 * @return bool
+	 */
+	protected function related_post_matches_season( $related_post_id, $season_id ) {
+		return absint( get_post_meta( $related_post_id, '_mahl_season_id', true ) ) === absint( $season_id );
 	}
 }

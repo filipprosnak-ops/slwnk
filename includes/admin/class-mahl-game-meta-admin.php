@@ -225,7 +225,7 @@ class MAHL_Game_Meta_Admin {
 
 			default:
 				$attributes = array(
-					'type'  => $field['type'],
+					'type'  => 'key' === $field['type'] ? 'text' : $field['type'],
 					'class' => $field['class'],
 					'id'    => $field['meta_key'],
 					'name'  => $field['meta_key'],
@@ -284,6 +284,13 @@ class MAHL_Game_Meta_Admin {
 					$fields['_mahl_match_date'],
 					$fields['_mahl_match_time'],
 					$fields['_mahl_status'],
+				),
+			),
+			array(
+				'title'  => __( 'Competition Structure', 'mahl-manager' ),
+				'fields' => array(
+					$fields['_mahl_round_number'],
+					$fields['_mahl_group_key'],
 				),
 			),
 			array(
@@ -360,6 +367,22 @@ class MAHL_Game_Meta_Admin {
 				'options'     => $this->get_status_options(),
 				'default'     => 'scheduled',
 				'description' => __( 'Choose the current state of the game record.', 'mahl-manager' ),
+			),
+			'_mahl_round_number'         => array(
+				'meta_key'    => '_mahl_round_number',
+				'label'       => __( 'Round Number', 'mahl-manager' ),
+				'type'        => 'number',
+				'class'       => 'small-text',
+				'min'         => 1,
+				'step'        => 1,
+				'description' => __( 'Store the competition round number for this game.', 'mahl-manager' ),
+			),
+			'_mahl_group_key'            => array(
+				'meta_key'    => '_mahl_group_key',
+				'label'       => __( 'Group / Bracket Key', 'mahl-manager' ),
+				'type'        => 'key',
+				'class'       => 'regular-text',
+				'description' => __( 'Optional normalized key for sub-groups or playoff brackets, for example top, bottom, semifinal, or final.', 'mahl-manager' ),
 			),
 			'_mahl_score_home_final'     => $this->get_score_field(
 				'_mahl_score_home_final',
@@ -520,6 +543,13 @@ class MAHL_Game_Meta_Admin {
 
 				return $this->sanitize_time_value( wp_unslash( $_POST[ $field['meta_key'] ] ) );
 
+			case 'key':
+				if ( ! isset( $_POST[ $field['meta_key'] ] ) ) {
+					return '';
+				}
+
+				return $this->sanitize_key_value( wp_unslash( $_POST[ $field['meta_key'] ] ) );
+
 			case 'number':
 				if ( ! isset( $_POST[ $field['meta_key'] ] ) ) {
 					return '';
@@ -599,6 +629,22 @@ class MAHL_Game_Meta_Admin {
 		}
 
 		return absint( $value );
+	}
+
+	/**
+	 * Sanitize a normalized key value.
+	 *
+	 * @param string $value Raw field value.
+	 * @return string
+	 */
+	protected function sanitize_key_value( $value ) {
+		$value = sanitize_key( wp_strip_all_tags( $value ) );
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		return $value;
 	}
 
 	/**

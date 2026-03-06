@@ -68,6 +68,7 @@ class MAHL_Plugin {
 	protected function load_modules() {
 		$this->post_types = array(
 			new MAHL_Season_Post_Type(),
+			new MAHL_Phase_Post_Type(),
 			new MAHL_Team_Post_Type(),
 			new MAHL_Player_Post_Type(),
 			new MAHL_Game_Post_Type(),
@@ -75,6 +76,7 @@ class MAHL_Plugin {
 
 		$this->services = array(
 			new MAHL_Season_Service(),
+			new MAHL_Phase_Service(),
 			new MAHL_Team_Service(),
 			new MAHL_Game_Service(),
 			new MAHL_Standings_Service(),
