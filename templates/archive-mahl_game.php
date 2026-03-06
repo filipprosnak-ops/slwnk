@@ -9,41 +9,60 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+$data = get_query_var( 'mahl_template_data', array() );
+
 get_header();
 ?>
 <main id="primary" class="site-main mahl-archive mahl-archive-game">
 	<header class="page-header">
-		<h1 class="page-title"><?php post_type_archive_title(); ?></h1>
+		<h1 class="page-title"><?php echo esc_html( $data['title'] ); ?></h1>
 	</header>
 
-	<?php if ( have_posts() ) : ?>
+	<?php if ( ! empty( $data['entries'] ) ) : ?>
 		<ul class="mahl-entry-list">
-			<?php
-			while ( have_posts() ) :
-				the_post();
-				$home_team_id = absint( get_post_meta( get_the_ID(), '_mahl_home_team_id', true ) );
-				$away_team_id = absint( get_post_meta( get_the_ID(), '_mahl_away_team_id', true ) );
-				$status       = get_post_meta( get_the_ID(), '_mahl_status', true );
-				?>
+			<?php foreach ( $data['entries'] as $entry ) : ?>
 				<li class="mahl-entry-item">
 					<h2 class="mahl-entry-title">
-						<a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+						<a href="<?php echo esc_url( $entry['permalink'] ); ?>"><?php echo esc_html( $entry['title'] ); ?></a>
 					</h2>
 					<p class="mahl-entry-meta">
 						<?php
-						echo esc_html( $home_team_id ? get_the_title( $home_team_id ) : __( 'Home team TBD', 'mahl-manager' ) );
+						echo esc_html( ! empty( $entry['home_team'] ) ? $entry['home_team']['title'] : __( 'Home team TBD', 'mahl-manager' ) );
 						echo ' vs ';
-						echo esc_html( $away_team_id ? get_the_title( $away_team_id ) : __( 'Away team TBD', 'mahl-manager' ) );
+						echo esc_html( ! empty( $entry['away_team'] ) ? $entry['away_team']['title'] : __( 'Away team TBD', 'mahl-manager' ) );
 						?>
 					</p>
-					<?php if ( ! empty( $status ) ) : ?>
+					<?php if ( ! empty( $entry['season'] ) ) : ?>
+						<p class="mahl-entry-meta">
+							<?php esc_html_e( 'Season:', 'mahl-manager' ); ?>
+							<a href="<?php echo esc_url( $entry['season']['permalink'] ); ?>"><?php echo esc_html( $entry['season']['title'] ); ?></a>
+						</p>
+					<?php endif; ?>
+					<?php if ( ! empty( $entry['phase'] ) ) : ?>
+						<p class="mahl-entry-meta">
+							<?php esc_html_e( 'Phase:', 'mahl-manager' ); ?>
+							<a href="<?php echo esc_url( $entry['phase']['permalink'] ); ?>"><?php echo esc_html( $entry['phase']['title'] ); ?></a>
+						</p>
+					<?php endif; ?>
+					<?php if ( ! empty( $entry['match_date'] ) || ! empty( $entry['match_time'] ) ) : ?>
+						<p class="mahl-entry-meta">
+							<?php echo esc_html( trim( $entry['match_date'] . ' ' . $entry['match_time'] ) ); ?>
+						</p>
+					<?php endif; ?>
+					<?php if ( ! empty( $entry['score_text'] ) ) : ?>
+						<p class="mahl-entry-meta">
+							<?php esc_html_e( 'Score:', 'mahl-manager' ); ?>
+							<?php echo esc_html( $entry['score_text'] ); ?>
+						</p>
+					<?php endif; ?>
+					<?php if ( ! empty( $entry['status_label'] ) ) : ?>
 						<p class="mahl-entry-meta">
 							<?php esc_html_e( 'Status:', 'mahl-manager' ); ?>
-							<?php echo esc_html( ucwords( str_replace( '_', ' ', $status ) ) ); ?>
+							<?php echo esc_html( $entry['status_label'] ); ?>
 						</p>
 					<?php endif; ?>
 				</li>
-			<?php endwhile; ?>
+			<?php endforeach; ?>
 		</ul>
 
 		<?php the_posts_pagination(); ?>

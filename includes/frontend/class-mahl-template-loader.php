@@ -39,6 +39,20 @@ class MAHL_Template_Loader {
 	);
 
 	/**
+	 * Frontend data provider instance.
+	 *
+	 * @var MAHL_Frontend_Data_Provider
+	 */
+	protected $data_provider;
+
+	/**
+	 * Set up the template loader.
+	 */
+	public function __construct() {
+		$this->data_provider = new MAHL_Frontend_Data_Provider();
+	}
+
+	/**
 	 * Register frontend hooks.
 	 *
 	 * @return void
@@ -63,6 +77,7 @@ class MAHL_Template_Loader {
 		$located_template = $this->locate_template( $template_name );
 
 		if ( ! empty( $located_template ) ) {
+			set_query_var( 'mahl_template_data', $this->data_provider->get_template_data( $template_name ) );
 			return $located_template;
 		}
 
