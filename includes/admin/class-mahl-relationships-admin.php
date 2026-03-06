@@ -285,7 +285,7 @@ class MAHL_Relationships_Admin {
 			'mahl_game'   => array(
 				'id'       => 'mahl-game-relationships',
 				'title'    => __( 'Game Relationships', 'mahl-manager' ),
-				'context'  => 'normal',
+				'context'  => 'side',
 				'priority' => 'default',
 			),
 		);

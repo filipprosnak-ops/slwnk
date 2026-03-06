@@ -27,6 +27,7 @@ class MAHL_Admin {
 	public function __construct() {
 		$this->modules = array(
 			new MAHL_Relationships_Admin(),
+			new MAHL_Game_Meta_Admin(),
 		);
 	}
 
