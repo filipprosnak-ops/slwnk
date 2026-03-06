@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin bootstrap placeholder.
+ * Admin bootstrap.
  *
  * @package MAHLManager
  */
@@ -10,9 +10,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Register future admin functionality.
+ * Register admin modules.
  */
 class MAHL_Admin {
+
+	/**
+	 * Registered admin modules.
+	 *
+	 * @var array
+	 */
+	protected $modules = array();
+
+	/**
+	 * Set up admin modules.
+	 */
+	public function __construct() {
+		$this->modules = array(
+			new MAHL_Relationships_Admin(),
+		);
+	}
 
 	/**
 	 * Register admin hooks.
@@ -20,6 +36,10 @@ class MAHL_Admin {
 	 * @return void
 	 */
 	public function register() {
-		// Placeholder for admin hook registration.
+		foreach ( $this->modules as $module ) {
+			if ( is_object( $module ) && method_exists( $module, 'register' ) ) {
+				$module->register();
+			}
+		}
 	}
 }

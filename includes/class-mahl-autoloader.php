@@ -63,6 +63,7 @@ class MAHL_Autoloader {
 			'MAHL_Standings_Service'    => 'includes/services/class-mahl-standings-service.php',
 			'MAHL_Player_Stats_Service' => 'includes/services/class-mahl-player-stats-service.php',
 			'MAHL_Admin'                => 'includes/admin/class-mahl-admin.php',
+			'MAHL_Relationships_Admin'  => 'includes/admin/class-mahl-relationships-admin.php',
 			'MAHL_Frontend'             => 'includes/frontend/class-mahl-frontend.php',
 		);
 	}
