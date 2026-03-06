@@ -415,9 +415,10 @@ class MAHL_Player_Stats_Service extends MAHL_Base_Service {
 			'team_id'         => $team_id,
 			'period_number'   => isset( $event['period_number'] ) ? max( 1, absint( $event['period_number'] ) ) : 1,
 			'event_order'     => isset( $event['event_order'] ) ? max( 1, absint( $event['event_order'] ) ) : 1,
+			'event_time'      => isset( $event['event_time'] ) ? sanitize_text_field( $event['event_time'] ) : '',
 			'participants'    => array(),
 			'penalty_minutes' => isset( $event['penalty_minutes'] ) ? absint( $event['penalty_minutes'] ) : 0,
-			'notes'           => isset( $event['notes'] ) ? sanitize_text_field( $event['notes'] ) : '',
+			'label'           => isset( $event['label'] ) ? sanitize_text_field( $event['label'] ) : ( isset( $event['notes'] ) ? sanitize_text_field( $event['notes'] ) : '' ),
 		);
 
 		if ( empty( $event['participants'] ) || ! is_array( $event['participants'] ) ) {

@@ -63,10 +63,11 @@ Game events structure:
   - event_type
   - team_id
   - period_number
+  - event_time
   - event_order
   - participants
   - penalty_minutes
-  - notes
+  - label
 
 Participant roles:
 - scorer

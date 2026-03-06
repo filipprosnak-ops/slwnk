@@ -62,6 +62,19 @@
 
 			if (row) {
 				rowsContainer.appendChild(row);
+				updateRowState(row);
+			}
+		});
+
+		rowsContainer.addEventListener('change', function (event) {
+			const row = event.target.closest('tr[data-row-index]');
+
+			if (!row) {
+				return;
+			}
+
+			if (event.target.matches('[data-mahl-team-select], [data-mahl-event-type-select]')) {
+				updateRowState(row);
 			}
 		});
 
@@ -81,6 +94,74 @@
 				ensureAtLeastOneRow(repeater, rowsContainer);
 			}
 		});
+
+		rowsContainer.querySelectorAll('tr[data-row-index]').forEach(function (row) {
+			updateRowState(row);
+		});
+	}
+
+	function filterPlayerSelects(row) {
+		const teamSelect = row.querySelector('[data-mahl-team-select]');
+		const selectedTeamId = teamSelect ? teamSelect.value : '';
+
+		row.querySelectorAll('[data-mahl-player-select]').forEach(function (select) {
+			const currentValue = select.value;
+
+			select.querySelectorAll('option').forEach(function (option) {
+				const optionTeamId = option.getAttribute('data-mahl-team-id');
+
+				if (!optionTeamId) {
+					option.hidden = false;
+					option.disabled = false;
+					return;
+				}
+
+				const isVisible = !selectedTeamId || optionTeamId === selectedTeamId;
+
+				option.hidden = !isVisible;
+				option.disabled = !isVisible;
+			});
+
+			if (currentValue && select.selectedOptions.length && select.selectedOptions[0].disabled) {
+				select.value = '';
+			}
+		});
+	}
+
+	function toggleEventFields(row) {
+		const eventTypeSelect = row.querySelector('[data-mahl-event-type-select]');
+		const eventType = eventTypeSelect ? eventTypeSelect.value : 'goal';
+		const assistFields = row.querySelectorAll('[data-mahl-player-select="assist-1"], [data-mahl-player-select="assist-2"]');
+		const penaltyField = row.querySelector('[data-mahl-penalty-minutes]');
+
+		if (!eventTypeSelect) {
+			return;
+		}
+
+		assistFields.forEach(function (select) {
+			const shouldDisable = eventType === 'penalty';
+
+			select.disabled = shouldDisable;
+
+			if (shouldDisable) {
+				select.value = '';
+			}
+		});
+
+		if (penaltyField) {
+			const shouldDisablePenalty = eventType !== 'penalty';
+
+			penaltyField.disabled = shouldDisablePenalty;
+
+			if (shouldDisablePenalty) {
+				penaltyField.value = '0';
+			}
+		}
+	}
+
+	function updateRowState(row) {
+		filterPlayerSelects(row);
+		toggleEventFields(row);
 	}
 
 	document.addEventListener('DOMContentLoaded', function () {

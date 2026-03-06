@@ -220,29 +220,29 @@ class MAHL_Game_Player_Events_Admin {
 					'event_type'        => 'goal',
 					'team_id'           => 0,
 					'period_number'     => 1,
-					'event_order'       => 1,
-					'primary_player_id' => 0,
-					'secondary_player_id' => 0,
-					'tertiary_player_id'  => 0,
+					'event_time'        => '',
+					'player_id'         => 0,
+					'assist_1_player_id'=> 0,
+					'assist_2_player_id'=> 0,
 					'penalty_minutes'   => 0,
-					'notes'             => '',
+					'event_label'       => '',
 				),
 			);
 		}
 
 		echo '<h3>' . esc_html__( 'Game Events', 'mahl-manager' ) . '</h3>';
-		echo '<p class="description">' . esc_html__( 'For goals, use the primary player as the scorer and secondary or tertiary players as assisters. For penalties, use the primary player as the penalized player and set penalty minutes.', 'mahl-manager' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'For goals, select the scoring player and up to two assists. For penalties, select the penalized player and enter the penalty minutes and reason. Event time is optional and should be entered as MM:SS.', 'mahl-manager' ) . '</p>';
 		echo '<div class="mahl-repeater" data-mahl-repeater="events">';
 		echo '<table class="widefat striped"><thead><tr>';
 		echo '<th>' . esc_html__( 'Type', 'mahl-manager' ) . '</th>';
 		echo '<th>' . esc_html__( 'Team', 'mahl-manager' ) . '</th>';
 		echo '<th>' . esc_html__( 'Period', 'mahl-manager' ) . '</th>';
-		echo '<th>' . esc_html__( 'Order', 'mahl-manager' ) . '</th>';
-		echo '<th>' . esc_html__( 'Primary Player', 'mahl-manager' ) . '</th>';
-		echo '<th>' . esc_html__( 'Secondary Player', 'mahl-manager' ) . '</th>';
-		echo '<th>' . esc_html__( 'Tertiary Player', 'mahl-manager' ) . '</th>';
+		echo '<th>' . esc_html__( 'Time', 'mahl-manager' ) . '</th>';
+		echo '<th>' . esc_html__( 'Player', 'mahl-manager' ) . '</th>';
+		echo '<th>' . esc_html__( 'Assist 1', 'mahl-manager' ) . '</th>';
+		echo '<th>' . esc_html__( 'Assist 2', 'mahl-manager' ) . '</th>';
 		echo '<th>' . esc_html__( 'Penalty Minutes', 'mahl-manager' ) . '</th>';
-		echo '<th>' . esc_html__( 'Notes', 'mahl-manager' ) . '</th>';
+		echo '<th>' . esc_html__( 'Reason / Label', 'mahl-manager' ) . '</th>';
 		echo '<th>' . esc_html__( 'Actions', 'mahl-manager' ) . '</th>';
 		echo '</tr></thead><tbody data-mahl-rows>';
 
@@ -282,7 +282,7 @@ class MAHL_Game_Player_Events_Admin {
 		?>
 		<tr data-mahl-row="appearance" data-row-index="<?php echo esc_attr( $index ); ?>">
 			<td>
-				<select class="widefat" name="mahl_player_appearances[<?php echo esc_attr( $index ); ?>][team_id]">
+				<select class="widefat" data-mahl-team-select name="mahl_player_appearances[<?php echo esc_attr( $index ); ?>][team_id]">
 					<option value=""><?php esc_html_e( 'Select team', 'mahl-manager' ); ?></option>
 					<?php foreach ( $team_options as $option_team_id => $team_label ) : ?>
 						<option value="<?php echo esc_attr( $option_team_id ); ?>" <?php selected( $team_id, $option_team_id ); ?>><?php echo esc_html( $team_label ); ?></option>
@@ -290,7 +290,7 @@ class MAHL_Game_Player_Events_Admin {
 				</select>
 			</td>
 			<td>
-				<select class="widefat" name="mahl_player_appearances[<?php echo esc_attr( $index ); ?>][player_id]">
+				<select class="widefat" data-mahl-player-select="appearance" name="mahl_player_appearances[<?php echo esc_attr( $index ); ?>][player_id]">
 					<option value=""><?php esc_html_e( 'Select player', 'mahl-manager' ); ?></option>
 					<?php echo $this->get_player_options_markup( $player_options, $player_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</select>
@@ -316,15 +316,15 @@ class MAHL_Game_Player_Events_Admin {
 	protected function get_event_row_markup( $index, $event, $team_options, $player_options ) {
 		$index = (string) $index;
 		$defaults = array(
-			'event_type'          => 'goal',
-			'team_id'             => 0,
-			'period_number'       => 1,
-			'event_order'         => 1,
-			'primary_player_id'   => 0,
-			'secondary_player_id' => 0,
-			'tertiary_player_id'  => 0,
-			'penalty_minutes'     => 0,
-			'notes'               => '',
+			'event_type'        => 'goal',
+			'team_id'           => 0,
+			'period_number'     => 1,
+			'event_time'        => '',
+			'player_id'         => 0,
+			'assist_1_player_id'=> 0,
+			'assist_2_player_id'=> 0,
+			'penalty_minutes'   => 0,
+			'event_label'       => '',
 		);
 		$event = wp_parse_args( $event, $defaults );
 
@@ -332,13 +332,13 @@ class MAHL_Game_Player_Events_Admin {
 		?>
 		<tr data-mahl-row="event" data-row-index="<?php echo esc_attr( $index ); ?>">
 			<td>
-				<select class="widefat" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][event_type]">
+				<select class="widefat" data-mahl-event-type-select name="mahl_game_events[<?php echo esc_attr( $index ); ?>][event_type]">
 					<option value="goal" <?php selected( $event['event_type'], 'goal' ); ?>><?php esc_html_e( 'Goal', 'mahl-manager' ); ?></option>
 					<option value="penalty" <?php selected( $event['event_type'], 'penalty' ); ?>><?php esc_html_e( 'Penalty', 'mahl-manager' ); ?></option>
 				</select>
 			</td>
 			<td>
-				<select class="widefat" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][team_id]">
+				<select class="widefat" data-mahl-team-select name="mahl_game_events[<?php echo esc_attr( $index ); ?>][team_id]">
 					<option value=""><?php esc_html_e( 'Select team', 'mahl-manager' ); ?></option>
 					<?php foreach ( $team_options as $option_team_id => $team_label ) : ?>
 						<option value="<?php echo esc_attr( $option_team_id ); ?>" <?php selected( absint( $event['team_id'] ), $option_team_id ); ?>><?php echo esc_html( $team_label ); ?></option>
@@ -349,31 +349,31 @@ class MAHL_Game_Player_Events_Admin {
 				<input class="small-text" type="number" min="1" step="1" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][period_number]" value="<?php echo esc_attr( $event['period_number'] ); ?>" />
 			</td>
 			<td>
-				<input class="small-text" type="number" min="1" step="1" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][event_order]" value="<?php echo esc_attr( $event['event_order'] ); ?>" />
+				<input class="small-text" type="text" inputmode="numeric" placeholder="<?php echo esc_attr__( '08:32', 'mahl-manager' ); ?>" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][event_time]" value="<?php echo esc_attr( $event['event_time'] ); ?>" />
 			</td>
 			<td>
-				<select class="widefat" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][primary_player_id]">
+				<select class="widefat" data-mahl-player-select="player" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][player_id]">
 					<option value=""><?php esc_html_e( 'Select player', 'mahl-manager' ); ?></option>
-					<?php echo $this->get_player_options_markup( $player_options, absint( $event['primary_player_id'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php echo $this->get_player_options_markup( $player_options, absint( $event['player_id'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</select>
 			</td>
 			<td>
-				<select class="widefat" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][secondary_player_id]">
+				<select class="widefat" data-mahl-player-select="assist-1" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][assist_1_player_id]">
 					<option value=""><?php esc_html_e( 'Select player', 'mahl-manager' ); ?></option>
-					<?php echo $this->get_player_options_markup( $player_options, absint( $event['secondary_player_id'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php echo $this->get_player_options_markup( $player_options, absint( $event['assist_1_player_id'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</select>
 			</td>
 			<td>
-				<select class="widefat" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][tertiary_player_id]">
+				<select class="widefat" data-mahl-player-select="assist-2" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][assist_2_player_id]">
 					<option value=""><?php esc_html_e( 'Select player', 'mahl-manager' ); ?></option>
-					<?php echo $this->get_player_options_markup( $player_options, absint( $event['tertiary_player_id'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php echo $this->get_player_options_markup( $player_options, absint( $event['assist_2_player_id'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</select>
 			</td>
 			<td>
-				<input class="small-text" type="number" min="0" step="1" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][penalty_minutes]" value="<?php echo esc_attr( $event['penalty_minutes'] ); ?>" />
+				<input class="small-text" data-mahl-penalty-minutes type="number" min="0" step="1" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][penalty_minutes]" value="<?php echo esc_attr( $event['penalty_minutes'] ); ?>" />
 			</td>
 			<td>
-				<input class="regular-text" type="text" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][notes]" value="<?php echo esc_attr( $event['notes'] ); ?>" />
+				<input class="regular-text" type="text" name="mahl_game_events[<?php echo esc_attr( $index ); ?>][event_label]" value="<?php echo esc_attr( $event['event_label'] ); ?>" />
 			</td>
 			<td>
 				<button type="button" class="button-link-delete" data-mahl-remove-row="event"><?php esc_html_e( 'Remove', 'mahl-manager' ); ?></button>
@@ -402,8 +402,9 @@ class MAHL_Game_Player_Events_Admin {
 
 			foreach ( $group['players'] as $player_id => $player_name ) {
 				printf(
-					'<option value="%1$d" %2$s>%3$s</option>',
+					'<option value="%1$d" data-mahl-team-id="%2$d" %3$s>%4$s</option>',
 					absint( $player_id ),
+					absint( $group['team_id'] ),
 					selected( $selected_player_id, $player_id, false ),
 					esc_html( $player_name )
 				);
@@ -447,31 +448,36 @@ class MAHL_Game_Player_Events_Admin {
 			}
 
 			$editor_event = array(
-				'event_type'          => isset( $event['event_type'] ) ? sanitize_key( $event['event_type'] ) : 'goal',
-				'team_id'             => isset( $event['team_id'] ) ? absint( $event['team_id'] ) : 0,
-				'period_number'       => isset( $event['period_number'] ) ? absint( $event['period_number'] ) : 1,
-				'event_order'         => isset( $event['event_order'] ) ? absint( $event['event_order'] ) : 1,
-				'primary_player_id'   => 0,
-				'secondary_player_id' => 0,
-				'tertiary_player_id'  => 0,
-				'penalty_minutes'     => isset( $event['penalty_minutes'] ) ? absint( $event['penalty_minutes'] ) : 0,
-				'notes'               => isset( $event['notes'] ) ? sanitize_text_field( $event['notes'] ) : '',
+				'event_type'        => isset( $event['event_type'] ) ? sanitize_key( $event['event_type'] ) : 'goal',
+				'team_id'           => isset( $event['team_id'] ) ? absint( $event['team_id'] ) : 0,
+				'period_number'     => isset( $event['period_number'] ) ? absint( $event['period_number'] ) : 1,
+				'event_time'        => isset( $event['event_time'] ) ? sanitize_text_field( $event['event_time'] ) : '',
+				'player_id'         => 0,
+				'assist_1_player_id'=> 0,
+				'assist_2_player_id'=> 0,
+				'penalty_minutes'   => isset( $event['penalty_minutes'] ) ? absint( $event['penalty_minutes'] ) : 0,
+				'event_label'       => isset( $event['label'] ) ? sanitize_text_field( $event['label'] ) : ( isset( $event['notes'] ) ? sanitize_text_field( $event['notes'] ) : '' ),
 			);
 
 			if ( ! empty( $event['participants'] ) && is_array( $event['participants'] ) ) {
-				$participant_ids = array();
-
 				foreach ( $event['participants'] as $participant ) {
-					if ( empty( $participant['player_id'] ) ) {
+					if ( empty( $participant['player_id'] ) || empty( $participant['role'] ) ) {
 						continue;
 					}
 
-					$participant_ids[] = absint( $participant['player_id'] );
-				}
+					$player_id = absint( $participant['player_id'] );
+					$role      = sanitize_key( $participant['role'] );
 
-				$editor_event['primary_player_id']   = isset( $participant_ids[0] ) ? $participant_ids[0] : 0;
-				$editor_event['secondary_player_id'] = isset( $participant_ids[1] ) ? $participant_ids[1] : 0;
-				$editor_event['tertiary_player_id']  = isset( $participant_ids[2] ) ? $participant_ids[2] : 0;
+					if ( 'scorer' === $role || 'penalized_player' === $role ) {
+						$editor_event['player_id'] = $player_id;
+					}
+
+					if ( 'assist' === $role && empty( $editor_event['assist_1_player_id'] ) ) {
+						$editor_event['assist_1_player_id'] = $player_id;
+					} elseif ( 'assist' === $role && empty( $editor_event['assist_2_player_id'] ) ) {
+						$editor_event['assist_2_player_id'] = $player_id;
+					}
+				}
 			}
 
 			$editor_events[] = $editor_event;
@@ -547,6 +553,7 @@ class MAHL_Game_Player_Events_Admin {
 
 		foreach ( $team_ids as $team_id ) {
 			$grouped_players[ $team_id ] = array(
+				'team_id' => $team_id,
 				'label'   => get_the_title( $team_id ),
 				'players' => array(),
 			);
@@ -651,9 +658,9 @@ class MAHL_Game_Player_Events_Admin {
 			$event_type      = isset( $event['event_type'] ) ? sanitize_key( $event['event_type'] ) : '';
 			$team_id         = isset( $event['team_id'] ) ? absint( $event['team_id'] ) : 0;
 			$period_number   = isset( $event['period_number'] ) ? max( 1, absint( $event['period_number'] ) ) : 1;
-			$event_order     = isset( $event['event_order'] ) ? absint( $event['event_order'] ) : 0;
 			$penalty_minutes = isset( $event['penalty_minutes'] ) ? absint( $event['penalty_minutes'] ) : 0;
-			$notes           = isset( $event['notes'] ) ? sanitize_text_field( $event['notes'] ) : '';
+			$event_time      = isset( $event['event_time'] ) ? $this->sanitize_event_time( $event['event_time'] ) : '';
+			$event_label     = isset( $event['event_label'] ) ? sanitize_text_field( $event['event_label'] ) : '';
 
 			if ( ! in_array( $event_type, array( 'goal', 'penalty' ), true ) ) {
 				continue;
@@ -663,31 +670,32 @@ class MAHL_Game_Player_Events_Admin {
 				continue;
 			}
 
-			$primary_player_id   = $this->sanitize_player_reference( $event, 'primary_player_id', $team_id );
-			$secondary_player_id = $this->sanitize_player_reference( $event, 'secondary_player_id', $team_id );
-			$tertiary_player_id  = $this->sanitize_player_reference( $event, 'tertiary_player_id', $team_id );
+			$player_id         = $this->sanitize_player_reference( $event, 'player_id', $team_id );
+			$assist_1_player_id = $this->sanitize_player_reference( $event, 'assist_1_player_id', $team_id );
+			$assist_2_player_id = $this->sanitize_player_reference( $event, 'assist_2_player_id', $team_id );
 
 			$normalized_event = array(
 				'event_type'      => $event_type,
 				'team_id'         => $team_id,
 				'period_number'   => $period_number,
-				'event_order'     => $event_order > 0 ? $event_order : $index + 1,
+				'event_order'     => $index + 1,
+				'event_time'      => $event_time,
 				'participants'    => array(),
 				'penalty_minutes' => 0,
-				'notes'           => $notes,
+				'label'           => $event_label,
 			);
 
 			if ( 'goal' === $event_type ) {
-				if ( empty( $primary_player_id ) ) {
+				if ( empty( $player_id ) ) {
 					continue;
 				}
 
 				$normalized_event['participants'][] = array(
 					'role'      => 'scorer',
-					'player_id' => $primary_player_id,
+					'player_id' => $player_id,
 				);
 
-				foreach ( array( $secondary_player_id, $tertiary_player_id ) as $assist_player_id ) {
+				foreach ( array( $assist_1_player_id, $assist_2_player_id ) as $assist_player_id ) {
 					if ( empty( $assist_player_id ) || $this->participant_exists( $normalized_event['participants'], $assist_player_id ) ) {
 						continue;
 					}
@@ -700,13 +708,13 @@ class MAHL_Game_Player_Events_Admin {
 			}
 
 			if ( 'penalty' === $event_type ) {
-				if ( empty( $primary_player_id ) || $penalty_minutes <= 0 ) {
+				if ( empty( $player_id ) || $penalty_minutes <= 0 ) {
 					continue;
 				}
 
 				$normalized_event['participants'][] = array(
 					'role'      => 'penalized_player',
-					'player_id' => $primary_player_id,
+					'player_id' => $player_id,
 				);
 				$normalized_event['penalty_minutes'] = $penalty_minutes;
 			}
@@ -733,6 +741,26 @@ class MAHL_Game_Player_Events_Admin {
 		$player_id = isset( $event[ $field_key ] ) ? absint( $event[ $field_key ] ) : 0;
 
 		return $this->is_valid_player_for_team( $player_id, $team_id ) ? $player_id : 0;
+	}
+
+	/**
+	 * Sanitize an optional event time value.
+	 *
+	 * @param string $value Raw event time.
+	 * @return string
+	 */
+	protected function sanitize_event_time( $value ) {
+		$value = sanitize_text_field( $value );
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		if ( preg_match( '/^\d{1,2}:\d{2}$/', $value ) ) {
+			return $value;
+		}
+
+		return '';
 	}
 
 	/**
