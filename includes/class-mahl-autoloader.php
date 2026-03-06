@@ -66,6 +66,8 @@ class MAHL_Autoloader {
 			'MAHL_Standings_Service'    => 'includes/services/class-mahl-standings-service.php',
 			'MAHL_Player_Stats_Service' => 'includes/services/class-mahl-player-stats-service.php',
 			'MAHL_Admin'                => 'includes/admin/class-mahl-admin.php',
+			'MAHL_Admin_List_Tables'    => 'includes/admin/class-mahl-admin-list-tables.php',
+			'MAHL_Admin_Context_Panels' => 'includes/admin/class-mahl-admin-context-panels.php',
 			'MAHL_Relationships_Admin'  => 'includes/admin/class-mahl-relationships-admin.php',
 			'MAHL_Game_Meta_Admin'      => 'includes/admin/class-mahl-game-meta-admin.php',
 			'MAHL_Game_Player_Events_Admin' => 'includes/admin/class-mahl-game-player-events-admin.php',

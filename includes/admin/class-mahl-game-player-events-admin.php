@@ -106,6 +106,10 @@ class MAHL_Game_Player_Events_Admin {
 
 		echo '<p>' . esc_html__( 'Use player appearances to track who played in the game and event rows to record goals, assists, and penalties. Save the game after assigning home and away teams to populate the team player lists.', 'mahl-manager' ) . '</p>';
 
+		if ( empty( $team_options ) ) {
+			echo '<div class="mahl-admin-tip">' . esc_html__( 'Assign home and away teams in the Competition Relationships box first. That enables team-specific player choices for appearances and events.', 'mahl-manager' ) . '</div>';
+		}
+
 		$this->render_appearances_section( $appearances, $team_options, $player_options );
 		$this->render_events_section( $events, $team_options, $player_options );
 	}

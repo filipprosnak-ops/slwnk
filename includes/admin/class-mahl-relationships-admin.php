@@ -78,6 +78,10 @@ class MAHL_Relationships_Admin {
 
 		echo '<div class="mahl-relationship-fields">';
 
+		if ( 'mahl_game' === $post_type ) {
+			echo '<p class="description">' . esc_html__( 'Choose the season first, then confirm the phase and teams belong to that season. This keeps standings, schedules, and player events consistent.', 'mahl-manager' ) . '</p>';
+		}
+
 		foreach ( $fields as $field ) {
 			$this->render_select_field( $post->ID, $field );
 		}
@@ -167,6 +171,7 @@ class MAHL_Relationships_Admin {
 	protected function render_select_field( $post_id, $field ) {
 		$current_value = absint( get_post_meta( $post_id, $field['meta_key'], true ) );
 		$options       = $this->get_related_posts( $field['related_post_type'] );
+		$select_attrs  = $this->get_select_attributes( $field['meta_key'] );
 
 		echo '<p>';
 		printf(
@@ -176,8 +181,17 @@ class MAHL_Relationships_Admin {
 		);
 
 		printf(
-			'<select class="widefat" id="%1$s" name="%1$s">',
-			esc_attr( $field['meta_key'] )
+			'<select %s>',
+			$this->build_html_attributes(
+				array_merge(
+					array(
+						'class' => 'widefat',
+						'id'    => $field['meta_key'],
+						'name'  => $field['meta_key'],
+					),
+					$select_attrs
+				)
+			)
 		);
 
 		printf(
@@ -186,10 +200,22 @@ class MAHL_Relationships_Admin {
 		);
 
 		foreach ( $options as $option ) {
+			$option_attributes = array(
+				'value' => absint( $option->ID ),
+			);
+
+			if ( $current_value === absint( $option->ID ) ) {
+				$option_attributes['selected'] = 'selected';
+			}
+
+			$option_attributes = array_merge(
+				$option_attributes,
+				$this->get_option_attributes( $option, $field['related_post_type'] )
+			);
+
 			printf(
-				'<option value="%1$d" %2$s>%3$s</option>',
-				absint( $option->ID ),
-				selected( $current_value, $option->ID, false ),
+				'<option %1$s>%2$s</option>',
+				$this->build_html_attributes( $option_attributes ),
 				esc_html( get_the_title( $option ) )
 			);
 		}
@@ -380,6 +406,10 @@ class MAHL_Relationships_Admin {
 		}
 
 		if ( empty( $values['_mahl_season_id'] ) ) {
+			if ( in_array( $meta_key, array( '_mahl_phase_id', '_mahl_home_team_id', '_mahl_away_team_id' ), true ) ) {
+				return false;
+			}
+
 			return true;
 		}
 
@@ -399,5 +429,72 @@ class MAHL_Relationships_Admin {
 	 */
 	protected function related_post_matches_season( $related_post_id, $season_id ) {
 		return absint( get_post_meta( $related_post_id, '_mahl_season_id', true ) ) === absint( $season_id );
+	}
+
+	/**
+	 * Return select attributes for relationship fields.
+	 *
+	 * @param string $meta_key Meta key.
+	 * @return array
+	 */
+	protected function get_select_attributes( $meta_key ) {
+		$attributes = array();
+
+		if ( '_mahl_season_id' === $meta_key ) {
+			$attributes['data-mahl-season-select'] = '1';
+		}
+
+		if ( '_mahl_phase_id' === $meta_key ) {
+			$attributes['data-mahl-phase-select'] = '1';
+		}
+
+		if ( '_mahl_home_team_id' === $meta_key ) {
+			$attributes['data-mahl-home-team-select'] = '1';
+			$attributes['data-mahl-team-select']      = '1';
+		}
+
+		if ( '_mahl_away_team_id' === $meta_key ) {
+			$attributes['data-mahl-away-team-select'] = '1';
+			$attributes['data-mahl-team-select']      = '1';
+		}
+
+		return $attributes;
+	}
+
+	/**
+	 * Return option attributes for related posts.
+	 *
+	 * @param WP_Post $option Related post object.
+	 * @param string  $related_post_type Related post type.
+	 * @return array
+	 */
+	protected function get_option_attributes( $option, $related_post_type ) {
+		if ( ! in_array( $related_post_type, array( 'mahl_phase', 'mahl_team' ), true ) ) {
+			return array();
+		}
+
+		return array(
+			'data-mahl-season-id' => absint( get_post_meta( $option->ID, '_mahl_season_id', true ) ),
+		);
+	}
+
+	/**
+	 * Build an HTML attribute string from an array.
+	 *
+	 * @param array $attributes HTML attributes.
+	 * @return string
+	 */
+	protected function build_html_attributes( $attributes ) {
+		$parts = array();
+
+		foreach ( $attributes as $attribute => $value ) {
+			$parts[] = sprintf(
+				'%1$s="%2$s"',
+				esc_attr( $attribute ),
+				esc_attr( (string) $value )
+			);
+		}
+
+		return implode( ' ', $parts );
 	}
 }

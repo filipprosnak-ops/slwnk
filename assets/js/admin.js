@@ -164,9 +164,130 @@
 		toggleEventFields(row);
 	}
 
+	function toggleDependentOptions(select, selectedValue) {
+		if (!select) {
+			return;
+		}
+
+		Array.from(select.options).forEach(function (option) {
+			if (!option.value) {
+				option.disabled = false;
+				return;
+			}
+
+			option.disabled = option.value === selectedValue;
+		});
+	}
+
+	function filterSeasonBoundSelect(select, seasonId) {
+		if (!select) {
+			return;
+		}
+
+		Array.from(select.options).forEach(function (option) {
+			const optionSeasonId = option.getAttribute('data-mahl-season-id');
+
+			if (!option.value || !optionSeasonId) {
+				option.hidden = false;
+				option.disabled = false;
+				return;
+			}
+
+			const isVisible = !seasonId || optionSeasonId === seasonId;
+
+			option.hidden = !isVisible;
+			option.disabled = !isVisible;
+		});
+
+		if (select.selectedOptions.length && select.selectedOptions[0].disabled) {
+			select.value = '';
+		}
+	}
+
+	function syncGameRelationshipScreen() {
+		const seasonSelect = document.querySelector('[data-mahl-season-select]');
+		const phaseSelect = document.querySelector('[data-mahl-phase-select]');
+		const homeTeamSelect = document.querySelector('[data-mahl-home-team-select]');
+		const awayTeamSelect = document.querySelector('[data-mahl-away-team-select]');
+		const seasonId = seasonSelect ? seasonSelect.value : '';
+
+		if (!seasonSelect && !phaseSelect && !homeTeamSelect && !awayTeamSelect) {
+			return;
+		}
+
+		filterSeasonBoundSelect(phaseSelect, seasonId);
+		filterSeasonBoundSelect(homeTeamSelect, seasonId);
+		filterSeasonBoundSelect(awayTeamSelect, seasonId);
+
+		if (homeTeamSelect && awayTeamSelect) {
+			toggleDependentOptions(awayTeamSelect, homeTeamSelect.value);
+			toggleDependentOptions(homeTeamSelect, awayTeamSelect.value);
+
+			if (homeTeamSelect.value && awayTeamSelect.value && homeTeamSelect.value === awayTeamSelect.value) {
+				awayTeamSelect.value = '';
+			}
+		}
+	}
+
+	function syncGameFormatFields() {
+		const overtimeToggle = document.querySelector('[data-mahl-overtime-toggle]');
+		const shootoutToggle = document.querySelector('[data-mahl-shootout-toggle]');
+		const overtimeFields = document.querySelectorAll('[data-mahl-overtime-field]');
+		const shootoutFields = document.querySelectorAll('[data-mahl-shootout-field]');
+
+		if (!overtimeToggle && !shootoutToggle) {
+			return;
+		}
+
+		if (shootoutToggle && shootoutToggle.checked && overtimeToggle) {
+			overtimeToggle.checked = true;
+		}
+
+		if (overtimeToggle && !overtimeToggle.checked && shootoutToggle) {
+			shootoutToggle.checked = false;
+		}
+
+		overtimeFields.forEach(function (field) {
+			const shouldDisable = !overtimeToggle || !overtimeToggle.checked;
+
+			field.disabled = shouldDisable;
+
+			if (shouldDisable) {
+				field.value = '';
+			}
+		});
+
+		shootoutFields.forEach(function (field) {
+			const shouldDisable = !shootoutToggle || !shootoutToggle.checked;
+
+			field.disabled = shouldDisable;
+
+			if (shouldDisable) {
+				field.value = '';
+			}
+		});
+	}
+
+	function initGameScreenHelpers() {
+		document.addEventListener('change', function (event) {
+			if (event.target.matches('[data-mahl-season-select], [data-mahl-phase-select], [data-mahl-home-team-select], [data-mahl-away-team-select]')) {
+				syncGameRelationshipScreen();
+			}
+
+			if (event.target.matches('[data-mahl-overtime-toggle], [data-mahl-shootout-toggle]')) {
+				syncGameFormatFields();
+			}
+		});
+
+		syncGameRelationshipScreen();
+		syncGameFormatFields();
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		document.querySelectorAll('[data-mahl-repeater]').forEach(function (repeater) {
 			initRepeater(repeater);
 		});
+
+		initGameScreenHelpers();
 	});
 }());

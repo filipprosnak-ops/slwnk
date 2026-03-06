@@ -63,6 +63,8 @@ class MAHL_Game_Meta_Admin {
 	public function render_meta_box( $post ) {
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_NAME );
 
+		echo '<p>' . esc_html__( 'Enter the competition context and teams first, then add schedule details, score, and event data. Finalized games should have a complete final score before they are used in standings and player statistics.', 'mahl-manager' ) . '</p>';
+
 		foreach ( $this->get_field_groups() as $group ) {
 			printf(
 				'<h3>%s</h3>',
@@ -197,9 +199,19 @@ class MAHL_Game_Meta_Admin {
 				break;
 
 			case 'select':
+				$select_attributes = array(
+					'class' => 'regular-text',
+					'id'    => $field['meta_key'],
+					'name'  => $field['meta_key'],
+				);
+
+				if ( ! empty( $field['attributes'] ) && is_array( $field['attributes'] ) ) {
+					$select_attributes = array_merge( $select_attributes, $field['attributes'] );
+				}
+
 				printf(
-					'<select class="regular-text" id="%1$s" name="%1$s">',
-					esc_attr( $field['meta_key'] )
+					'<select %1$s>',
+					$this->build_html_attributes( $select_attributes )
 				);
 
 				foreach ( $field['options'] as $option_value => $option_label ) {
@@ -215,10 +227,25 @@ class MAHL_Game_Meta_Admin {
 				break;
 
 			case 'checkbox':
+				$checkbox_attributes = array(
+					'type'  => 'checkbox',
+					'id'    => $field['meta_key'],
+					'name'  => $field['meta_key'],
+					'value' => '1',
+				);
+
+				if ( ! empty( $field['attributes'] ) && is_array( $field['attributes'] ) ) {
+					$checkbox_attributes = array_merge( $checkbox_attributes, $field['attributes'] );
+				}
+
+				if ( '1' === (string) $value ) {
+					$checkbox_attributes['checked'] = 'checked';
+				}
+
 				printf(
-					'<label for="%1$s"><input type="checkbox" id="%1$s" name="%1$s" value="1" %2$s /> %3$s</label>',
+					'<label for="%1$s"><input %2$s /> %3$s</label>',
 					esc_attr( $field['meta_key'] ),
-					checked( $value, '1', false ),
+					$this->build_html_attributes( $checkbox_attributes ),
 					esc_html( $field['checkbox_label'] )
 				);
 				break;
@@ -240,6 +267,10 @@ class MAHL_Game_Meta_Admin {
 					$attributes['step'] = $field['step'];
 				}
 
+				if ( ! empty( $field['attributes'] ) && is_array( $field['attributes'] ) ) {
+					$attributes = array_merge( $attributes, $field['attributes'] );
+				}
+
 				$this->render_input_tag( $attributes );
 				break;
 		}
@@ -252,6 +283,19 @@ class MAHL_Game_Meta_Admin {
 	 * @return void
 	 */
 	protected function render_input_tag( $attributes ) {
+		printf(
+			'<input %s />',
+			$this->build_html_attributes( $attributes )
+		);
+	}
+
+	/**
+	 * Build an HTML attribute string from an array.
+	 *
+	 * @param array $attributes HTML attributes.
+	 * @return string
+	 */
+	protected function build_html_attributes( $attributes ) {
 		$parts = array();
 
 		foreach ( $attributes as $attribute => $value ) {
@@ -262,10 +306,7 @@ class MAHL_Game_Meta_Admin {
 			);
 		}
 
-		printf(
-			'<input %s />',
-			implode( ' ', $parts )
-		);
+		return implode( ' ', $parts );
 	}
 
 	/**
@@ -366,6 +407,9 @@ class MAHL_Game_Meta_Admin {
 				'type'        => 'select',
 				'options'     => $this->get_status_options(),
 				'default'     => 'scheduled',
+				'attributes'  => array(
+					'data-mahl-game-status' => '1',
+				),
 				'description' => __( 'Choose the current state of the game record.', 'mahl-manager' ),
 			),
 			'_mahl_round_number'         => array(
@@ -382,6 +426,9 @@ class MAHL_Game_Meta_Admin {
 				'label'       => __( 'Group / Bracket Key', 'mahl-manager' ),
 				'type'        => 'key',
 				'class'       => 'regular-text',
+				'attributes'  => array(
+					'placeholder' => __( 'top, bottom, semifinal, final', 'mahl-manager' ),
+				),
 				'description' => __( 'Optional normalized key for sub-groups or playoff brackets, for example top, bottom, semifinal, or final.', 'mahl-manager' ),
 			),
 			'_mahl_score_home_final'     => $this->get_score_field(
@@ -428,6 +475,9 @@ class MAHL_Game_Meta_Admin {
 				'meta_key'       => '_mahl_overtime_played',
 				'label'          => __( 'Overtime Played', 'mahl-manager' ),
 				'type'           => 'checkbox',
+				'attributes'     => array(
+					'data-mahl-overtime-toggle' => '1',
+				),
 				'checkbox_label' => __( 'This game included overtime.', 'mahl-manager' ),
 				'description'    => __( 'Enable overtime scoring fields for the game.', 'mahl-manager' ),
 			),
@@ -435,28 +485,59 @@ class MAHL_Game_Meta_Admin {
 				'meta_key'       => '_mahl_shootout_played',
 				'label'          => __( 'Shootout Played', 'mahl-manager' ),
 				'type'           => 'checkbox',
+				'attributes'     => array(
+					'data-mahl-shootout-toggle' => '1',
+				),
 				'checkbox_label' => __( 'This game was decided by a shootout.', 'mahl-manager' ),
 				'description'    => __( 'Shootout implies overtime and stores its own scoring values.', 'mahl-manager' ),
 			),
-			'_mahl_score_home_overtime'  => $this->get_score_field(
-				'_mahl_score_home_overtime',
-				__( 'Home Overtime Score', 'mahl-manager' ),
-				__( 'Store the home team score recorded in overtime.', 'mahl-manager' )
+			'_mahl_score_home_overtime'  => array_merge(
+				$this->get_score_field(
+					'_mahl_score_home_overtime',
+					__( 'Home Overtime Score', 'mahl-manager' ),
+					__( 'Store the home team score recorded in overtime.', 'mahl-manager' )
+				),
+				array(
+					'attributes' => array(
+						'data-mahl-overtime-field' => '1',
+					),
+				)
 			),
-			'_mahl_score_away_overtime'  => $this->get_score_field(
-				'_mahl_score_away_overtime',
-				__( 'Away Overtime Score', 'mahl-manager' ),
-				__( 'Store the away team score recorded in overtime.', 'mahl-manager' )
+			'_mahl_score_away_overtime'  => array_merge(
+				$this->get_score_field(
+					'_mahl_score_away_overtime',
+					__( 'Away Overtime Score', 'mahl-manager' ),
+					__( 'Store the away team score recorded in overtime.', 'mahl-manager' )
+				),
+				array(
+					'attributes' => array(
+						'data-mahl-overtime-field' => '1',
+					),
+				)
 			),
-			'_mahl_score_home_shootout'  => $this->get_score_field(
-				'_mahl_score_home_shootout',
-				__( 'Home Shootout Score', 'mahl-manager' ),
-				__( 'Store the home team shootout score.', 'mahl-manager' )
+			'_mahl_score_home_shootout'  => array_merge(
+				$this->get_score_field(
+					'_mahl_score_home_shootout',
+					__( 'Home Shootout Score', 'mahl-manager' ),
+					__( 'Store the home team shootout score.', 'mahl-manager' )
+				),
+				array(
+					'attributes' => array(
+						'data-mahl-shootout-field' => '1',
+					),
+				)
 			),
-			'_mahl_score_away_shootout'  => $this->get_score_field(
-				'_mahl_score_away_shootout',
-				__( 'Away Shootout Score', 'mahl-manager' ),
-				__( 'Store the away team shootout score.', 'mahl-manager' )
+			'_mahl_score_away_shootout'  => array_merge(
+				$this->get_score_field(
+					'_mahl_score_away_shootout',
+					__( 'Away Shootout Score', 'mahl-manager' ),
+					__( 'Store the away team shootout score.', 'mahl-manager' )
+				),
+				array(
+					'attributes' => array(
+						'data-mahl-shootout-field' => '1',
+					),
+				)
 			),
 			'_mahl_notes'                => array(
 				'meta_key'    => '_mahl_notes',
