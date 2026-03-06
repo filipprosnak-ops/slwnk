@@ -1,0 +1,57 @@
+/*
+ * MAHL Manager admin UI helpers.
+ */
+
+.mahl-admin-panel {
+	display: grid;
+	gap: 12px;
+}
+
+.mahl-admin-panel__intro {
+	margin: 0;
+	color: #50575e;
+}
+
+.mahl-admin-meta-list {
+	display: grid;
+	grid-template-columns: minmax(96px, 1fr) 2fr;
+	gap: 8px 12px;
+	margin: 0;
+}
+
+.mahl-admin-meta-list dt {
+	margin: 0;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.mahl-admin-meta-list dd {
+	margin: 0;
+	color: #50575e;
+}
+
+.mahl-admin-tip {
+	padding: 10px 12px;
+	border-left: 4px solid #2271b1;
+	background: #f0f6fc;
+	color: #1d2327;
+}
+
+.mahl-relationship-fields p {
+	margin-bottom: 14px;
+}
+
+.mahl-relationship-fields .description {
+	display: block;
+	margin-top: 6px;
+}
+
+.column-mahl_matchup {
+	min-width: 190px;
+}
+
+.column-mahl_score,
+.column-mahl_round,
+.column-mahl_status {
+	white-space: nowrap;
+}

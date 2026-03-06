@@ -7,6 +7,7 @@ WordPress plugin for managing amateur hockey leagues.
 
 Core entities:
 - Seasons
+- Phases
 - Teams
 - Players
 - Games
@@ -22,8 +23,15 @@ Principles:
 
 Version 1 scope:
 - Season management
+- Phase management
 - Team management
 - Player management
 - Game management
 - Standings calculation
 - Player statistics
+
+Competition hierarchy:
+- Season = main competition year
+- Phase = named phase within a season
+- Round = numeric game field
+- Group/Bracket = optional game field

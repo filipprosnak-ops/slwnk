@@ -3,7 +3,7 @@
 Architecture:
 - Use PHP OOP architecture
 - Keep classes small and focused
-- Separate services, post types, and frontend logic
+- Separate services, post types, admin modules, and frontend logic
 - Treat MAHL Manager as a CMS-style WordPress module
 - All core content must be created and managed in the WordPress admin using custom post types
 - Frontend pages must be generated automatically from stored data
