@@ -143,6 +143,7 @@ class MAHL_Frontend_Data_Provider {
 		$phases    = $this->get_phase_posts_for_season( $season_id );
 		$teams     = $this->get_team_posts_for_season( $season_id );
 		$games     = $this->get_game_posts_for_season( $season_id );
+		$schedule  = $this->build_schedule_sections( $games, $phases );
 
 		return array(
 			'title'              => get_the_title( $season_id ),
@@ -155,8 +156,9 @@ class MAHL_Frontend_Data_Provider {
 				'available_groups'  => $this->get_unique_group_keys_from_games( $games ),
 			),
 			'phases'             => $this->build_phase_summary_list( $phases ),
+			'phase_navigation'   => $this->build_phase_navigation( $schedule ),
 			'standings_sections' => $this->get_season_standings_sections( $season_id, $phases ),
-			'games_by_phase'     => $this->group_games_by_phase( $games, $phases ),
+			'schedule_sections'  => $schedule,
 		);
 	}
 
@@ -169,17 +171,24 @@ class MAHL_Frontend_Data_Provider {
 	protected function get_team_single_data( $team_id ) {
 		$team_id         = absint( $team_id );
 		$season_id       = absint( get_post_meta( $team_id, '_mahl_season_id', true ) );
+		$season_phases   = ! empty( $season_id ) ? $this->get_phase_posts_for_season( $season_id ) : array();
 		$roster          = $this->get_roster_for_team( $team_id );
 		$games           = $this->get_games_for_team( $team_id );
 		$standings       = $this->get_team_standings_context( $team_id, $season_id );
+		$schedule        = $this->build_schedule_sections( $games, $season_phases );
 
 		return array(
 			'title'             => get_the_title( $team_id ),
 			'excerpt'           => has_excerpt( $team_id ) ? get_the_excerpt( $team_id ) : '',
 			'content'           => $this->get_post_content( $team_id ),
 			'season'            => $this->get_link_data( $season_id ),
+			'summary'           => array(
+				'roster_count' => count( $roster ),
+				'game_count'   => count( $games ),
+			),
 			'roster'            => array_map( array( $this, 'build_player_link_entry' ), $roster ),
-			'games'             => $this->build_game_list( $games ),
+			'phase_navigation'  => $this->build_phase_navigation( $schedule ),
+			'schedule_sections' => $schedule,
 			'standings_context' => $standings,
 		);
 	}
@@ -202,6 +211,10 @@ class MAHL_Frontend_Data_Provider {
 			'content'    => $this->get_post_content( $player_id ),
 			'team'       => $this->get_link_data( $team_id ),
 			'season'     => $this->get_link_data( $season_id ),
+			'context'    => array(
+				'team'   => $this->get_link_data( $team_id ),
+				'season' => $this->get_link_data( $season_id ),
+			),
 			'statistics' => $this->get_player_statistics_row( $player_id, $team_id, $stats ),
 		);
 	}
@@ -225,6 +238,7 @@ class MAHL_Frontend_Data_Provider {
 			'phase'          => $this->get_link_data( absint( get_post_meta( $game_id, '_mahl_phase_id', true ) ) ),
 			'round_number'   => absint( get_post_meta( $game_id, '_mahl_round_number', true ) ),
 			'group_key'      => sanitize_key( get_post_meta( $game_id, '_mahl_group_key', true ) ),
+			'group_label'    => $this->format_group_key_label( get_post_meta( $game_id, '_mahl_group_key', true ) ),
 			'venue'          => sanitize_text_field( get_post_meta( $game_id, '_mahl_venue', true ) ),
 			'match_date'     => $this->format_match_date( get_post_meta( $game_id, '_mahl_match_date', true ) ),
 			'match_time'     => $this->format_match_time( get_post_meta( $game_id, '_mahl_match_time', true ) ),
@@ -232,7 +246,8 @@ class MAHL_Frontend_Data_Provider {
 			'status_label'   => $this->format_status_label( get_post_meta( $game_id, '_mahl_status', true ) ),
 			'home_team'      => $this->get_link_data( absint( get_post_meta( $game_id, '_mahl_home_team_id', true ) ) ),
 			'away_team'      => $this->get_link_data( absint( get_post_meta( $game_id, '_mahl_away_team_id', true ) ) ),
-			'final_score'    => $game_data['score_text'],
+			'final_score'    => $game_data['score']['text'],
+			'score'          => $game_data['score'],
 			'period_scores'  => $this->get_period_scores( $game_id, $period_count ),
 			'events'         => $this->get_game_event_entries( $game_id ),
 		);
@@ -361,8 +376,10 @@ class MAHL_Frontend_Data_Provider {
 
 		if ( ! empty( $overall['rows'] ) ) {
 			$sections[] = array(
-				'title' => __( 'Overall Season Standings', 'mahl-manager' ),
-				'rows'  => $overall['rows'],
+				'id'          => 'standings-overall',
+				'title'       => __( 'Overall Season Standings', 'mahl-manager' ),
+				'description' => __( 'All completed season games.', 'mahl-manager' ),
+				'rows'        => $overall['rows'],
 			);
 		}
 
@@ -379,8 +396,10 @@ class MAHL_Frontend_Data_Provider {
 			}
 
 			$sections[] = array(
-				'title' => get_the_title( $phase ),
-				'rows'  => $phase_standings['rows'],
+				'id'          => 'standings-phase-' . $phase->ID,
+				'title'       => get_the_title( $phase ),
+				'description' => __( 'Completed games in this phase.', 'mahl-manager' ),
+				'rows'        => $phase_standings['rows'],
 			);
 		}
 
@@ -388,62 +407,39 @@ class MAHL_Frontend_Data_Provider {
 	}
 
 	/**
-	 * Group games by phase for season rendering.
+	 * Build schedule sections grouped by phase and round.
 	 *
 	 * @param array $games Game posts.
 	 * @param array $phases Phase posts.
 	 * @return array
 	 */
-	protected function group_games_by_phase( $games, $phases ) {
-		$grouped = array();
-
-		foreach ( $phases as $phase ) {
-			$grouped[ $phase->ID ] = array(
-				'phase' => array(
-					'id'        => $phase->ID,
-					'title'     => get_the_title( $phase ),
-					'permalink' => get_permalink( $phase ),
-				),
-				'games' => array(),
-			);
-		}
-
-		$grouped[0] = array(
-			'phase' => array(
-				'id'        => 0,
-				'title'     => __( 'Unassigned Phase', 'mahl-manager' ),
-				'permalink' => '',
-			),
-			'games' => array(),
-		);
+	protected function build_schedule_sections( $games, $phases ) {
+		$phase_lookup = $this->build_phase_lookup( $phases );
+		$sections     = array();
 
 		foreach ( $games as $game ) {
-			$phase_id = absint( get_post_meta( $game->ID, '_mahl_phase_id', true ) );
+			$game_entry = $this->build_game_list_item( $game->ID );
+			$phase_id   = absint( $game_entry['phase_id'] );
 
-			if ( ! isset( $grouped[ $phase_id ] ) ) {
-				$grouped[ $phase_id ] = array(
-					'phase' => $this->get_link_data( $phase_id ),
-					'games' => array(),
-				);
+			if ( ! isset( $sections[ $phase_id ] ) ) {
+				$sections[ $phase_id ] = $this->get_empty_schedule_section( $phase_id, $phase_lookup );
 			}
 
-			$grouped[ $phase_id ]['games'][] = $this->build_game_list_item( $game->ID );
+			$sections[ $phase_id ]['games'][] = $game_entry;
 		}
 
-		$groups = array_values(
-			array_filter(
-				$grouped,
-				function ( $group ) {
-					return ! empty( $group['games'] );
-				}
-			)
+		foreach ( $sections as $phase_id => $section ) {
+			$sections[ $phase_id ] = $this->finalize_schedule_section( $section );
+		}
+
+		$sections = array_values( $sections );
+
+		usort(
+			$sections,
+			array( $this, 'compare_schedule_sections' )
 		);
 
-		foreach ( $groups as $index => $group ) {
-			$groups[ $index ]['games'] = $this->sort_game_entries( $group['games'] );
-		}
-
-		return $groups;
+		return $sections;
 	}
 
 	/**
@@ -491,6 +487,150 @@ class MAHL_Frontend_Data_Provider {
 		}
 
 		return $context;
+	}
+
+	/**
+	 * Build a phase lookup array keyed by phase ID.
+	 *
+	 * @param array $phases Phase posts.
+	 * @return array
+	 */
+	protected function build_phase_lookup( $phases ) {
+		$lookup = array();
+
+		foreach ( $phases as $phase ) {
+			$lookup[ $phase->ID ] = array(
+				'id'        => $phase->ID,
+				'title'     => get_the_title( $phase ),
+				'permalink' => get_permalink( $phase ),
+			);
+		}
+
+		return $lookup;
+	}
+
+	/**
+	 * Return an empty schedule section.
+	 *
+	 * @param int   $phase_id Phase post ID.
+	 * @param array $phase_lookup Phase lookup array.
+	 * @return array
+	 */
+	protected function get_empty_schedule_section( $phase_id, $phase_lookup ) {
+		$phase_data = isset( $phase_lookup[ $phase_id ] ) ? $phase_lookup[ $phase_id ] : array(
+			'id'        => 0,
+			'title'     => __( 'Unassigned Phase', 'mahl-manager' ),
+			'permalink' => '',
+		);
+
+		return array(
+			'id'       => 'phase-section-' . ( ! empty( $phase_data['id'] ) ? $phase_data['id'] : 'unassigned' ),
+			'phase'    => $phase_data,
+			'summary'  => array(
+				'game_count'     => 0,
+				'round_count'    => 0,
+				'group_labels'   => array(),
+			),
+			'games'    => array(),
+			'rounds'   => array(),
+		);
+	}
+
+	/**
+	 * Finalize a schedule section after games are assigned.
+	 *
+	 * @param array $section Schedule section.
+	 * @return array
+	 */
+	protected function finalize_schedule_section( $section ) {
+		$games                = $this->sort_game_entries( $section['games'] );
+		$section['games']     = $games;
+		$section['rounds']    = $this->group_games_by_round( $games );
+		$section['summary']   = array(
+			'game_count'   => count( $games ),
+			'round_count'  => count( $section['rounds'] ),
+			'group_labels' => $this->get_unique_group_labels_from_entries( $games ),
+		);
+
+		return $section;
+	}
+
+	/**
+	 * Build phase navigation items for schedule sections.
+	 *
+	 * @param array $schedule_sections Schedule sections.
+	 * @return array
+	 */
+	protected function build_phase_navigation( $schedule_sections ) {
+		$navigation = array();
+
+		foreach ( $schedule_sections as $section ) {
+			$navigation[] = array(
+				'id'          => $section['id'],
+				'title'       => $section['phase']['title'],
+				'game_count'  => $section['summary']['game_count'],
+				'round_count' => $section['summary']['round_count'],
+			);
+		}
+
+		return $navigation;
+	}
+
+	/**
+	 * Group game entries by round number.
+	 *
+	 * @param array $games Game entries.
+	 * @return array
+	 */
+	protected function group_games_by_round( $games ) {
+		$rounds = array();
+
+		foreach ( $games as $game ) {
+			$round_number = ! empty( $game['round_number'] ) ? absint( $game['round_number'] ) : 0;
+
+			if ( ! isset( $rounds[ $round_number ] ) ) {
+				$rounds[ $round_number ] = array(
+					'round_number' => $round_number,
+					'title'        => $round_number > 0
+						? sprintf(
+							/* translators: %d: round number. */
+							__( 'Round %d', 'mahl-manager' ),
+							$round_number
+						)
+						: __( 'Other Games', 'mahl-manager' ),
+					'games'        => array(),
+				);
+			}
+
+			$rounds[ $round_number ]['games'][] = $game;
+		}
+
+		$rounds = array_values( $rounds );
+
+		usort(
+			$rounds,
+			array( $this, 'compare_round_groups' )
+		);
+
+		return $rounds;
+	}
+
+	/**
+	 * Return unique group labels from game entries.
+	 *
+	 * @param array $games Game entries.
+	 * @return array
+	 */
+	protected function get_unique_group_labels_from_entries( $games ) {
+		$labels = array();
+
+		foreach ( $games as $game ) {
+			if ( ! empty( $game['group_label'] ) ) {
+				$labels[ $game['group_label'] ] = $game['group_label'];
+			}
+		}
+
+		return array_values( $labels );
 	}
 
 	/**
@@ -840,10 +980,15 @@ class MAHL_Frontend_Data_Provider {
 	protected function build_game_list_item( $game_id ) {
 		$season_id        = absint( get_post_meta( $game_id, '_mahl_season_id', true ) );
 		$phase_id         = absint( get_post_meta( $game_id, '_mahl_phase_id', true ) );
+		$round_number     = absint( get_post_meta( $game_id, '_mahl_round_number', true ) );
 		$home_team_id     = absint( get_post_meta( $game_id, '_mahl_home_team_id', true ) );
 		$away_team_id     = absint( get_post_meta( $game_id, '_mahl_away_team_id', true ) );
 		$home_score_final = get_post_meta( $game_id, '_mahl_score_home_final', true );
 		$away_score_final = get_post_meta( $game_id, '_mahl_score_away_final', true );
+		$group_key        = sanitize_key( get_post_meta( $game_id, '_mahl_group_key', true ) );
+		$score_text       = ( '' !== $home_score_final && '' !== $away_score_final ) ? $home_score_final . ' : ' . $away_score_final : '';
+		$status           = sanitize_key( get_post_meta( $game_id, '_mahl_status', true ) );
+		$status_label     = $this->format_status_label( $status );
 
 		return array(
 			'id'           => $game_id,
@@ -851,14 +996,25 @@ class MAHL_Frontend_Data_Provider {
 			'permalink'    => get_permalink( $game_id ),
 			'season'       => $this->get_link_data( $season_id ),
 			'phase'        => $this->get_link_data( $phase_id ),
+			'phase_id'     => $phase_id,
+			'round_number' => $round_number,
 			'home_team'    => $this->get_link_data( $home_team_id ),
 			'away_team'    => $this->get_link_data( $away_team_id ),
-			'status'       => sanitize_key( get_post_meta( $game_id, '_mahl_status', true ) ),
-			'status_label' => $this->format_status_label( get_post_meta( $game_id, '_mahl_status', true ) ),
+			'status'       => $status,
+			'status_label' => $status_label,
 			'match_date'   => $this->format_match_date( get_post_meta( $game_id, '_mahl_match_date', true ) ),
 			'match_time'   => $this->format_match_time( get_post_meta( $game_id, '_mahl_match_time', true ) ),
-			'group_key'    => sanitize_key( get_post_meta( $game_id, '_mahl_group_key', true ) ),
-			'score_text'   => ( '' !== $home_score_final && '' !== $away_score_final ) ? $home_score_final . ' : ' . $away_score_final : '',
+			'venue'        => sanitize_text_field( get_post_meta( $game_id, '_mahl_venue', true ) ),
+			'group_key'    => $group_key,
+			'group_label'  => $this->format_group_key_label( $group_key ),
+			'score'        => array(
+				'home'          => '' !== $home_score_final ? absint( $home_score_final ) : null,
+				'away'          => '' !== $away_score_final ? absint( $away_score_final ) : null,
+				'text'          => $score_text,
+				'display_state' => '' !== $score_text ? $score_text : $status_label,
+				'is_final'      => 'final' === $status,
+			),
+			'score_text'   => $score_text,
 		);
 	}
 
@@ -955,6 +1111,50 @@ class MAHL_Frontend_Data_Provider {
 	 */
 	protected function compare_game_entries( $left, $right ) {
 		return $this->compare_schedule_values( $left['id'], $right['id'] );
+	}
+
+	/**
+	 * Compare two schedule sections.
+	 *
+	 * @param array $left Left section.
+	 * @param array $right Right section.
+	 * @return int
+	 */
+	protected function compare_schedule_sections( $left, $right ) {
+		$left_phase_id  = isset( $left['phase']['id'] ) ? absint( $left['phase']['id'] ) : 0;
+		$right_phase_id = isset( $right['phase']['id'] ) ? absint( $right['phase']['id'] ) : 0;
+
+		if ( 0 === $left_phase_id && 0 !== $right_phase_id ) {
+			return 1;
+		}
+
+		if ( 0 !== $left_phase_id && 0 === $right_phase_id ) {
+			return -1;
+		}
+
+		return strcasecmp( $left['phase']['title'], $right['phase']['title'] );
+	}
+
+	/**
+	 * Compare round groups inside one phase.
+	 *
+	 * @param array $left Left round group.
+	 * @param array $right Right round group.
+	 * @return int
+	 */
+	protected function compare_round_groups( $left, $right ) {
+		$left_round  = absint( $left['round_number'] );
+		$right_round = absint( $right['round_number'] );
+
+		if ( 0 === $left_round && 0 !== $right_round ) {
+			return 1;
+		}
+
+		if ( 0 !== $left_round && 0 === $right_round ) {
+			return -1;
+		}
+
+		return $left_round - $right_round;
 	}
 
 	/**
