@@ -1,6 +1,6 @@
 <?php
 /**
- * Frontend bootstrap placeholder.
+ * Frontend bootstrap.
  *
  * @package MAHLManager
  */
@@ -10,9 +10,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Register future frontend functionality.
+ * Register frontend modules.
  */
 class MAHL_Frontend {
+
+	/**
+	 * Registered frontend modules.
+	 *
+	 * @var array
+	 */
+	protected $modules = array();
+
+	/**
+	 * Set up frontend modules.
+	 */
+	public function __construct() {
+		$this->modules = array(
+			new MAHL_Template_Loader(),
+		);
+	}
 
 	/**
 	 * Register frontend hooks.
@@ -20,6 +36,10 @@ class MAHL_Frontend {
 	 * @return void
 	 */
 	public function register() {
-		// Placeholder for frontend hook registration.
+		foreach ( $this->modules as $module ) {
+			if ( is_object( $module ) && method_exists( $module, 'register' ) ) {
+				$module->register();
+			}
+		}
 	}
 }

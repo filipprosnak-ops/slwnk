@@ -71,6 +71,7 @@ class MAHL_Autoloader {
 			'MAHL_Game_Player_Events_Admin' => 'includes/admin/class-mahl-game-player-events-admin.php',
 			'MAHL_Settings_Admin'       => 'includes/admin/class-mahl-settings-admin.php',
 			'MAHL_Frontend'             => 'includes/frontend/class-mahl-frontend.php',
+			'MAHL_Template_Loader'      => 'includes/frontend/class-mahl-template-loader.php',
 		);
 	}
 }
