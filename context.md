@@ -16,9 +16,14 @@ Important rules:
 - Frontend output must be rendered through custom post type archive templates, single templates, and a plugin template loader
 - Core frontend pages should exist automatically, similar to WooCommerce product pages
 - No manual page creation should be required for seasons, teams, players, games, or standings
+- Season must remain the main competition year entity
+- Phase must be implemented as a separate competition structure within a season
+- Round must be stored as a numeric game field
+- Group or bracket must be stored as an optional game field
 
 Main entities:
 - Season
+- Phase
 - Team
 - Player
 - Game
