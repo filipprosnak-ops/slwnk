@@ -1,0 +1,69 @@
+<?php
+/**
+ * Plugin autoloader.
+ *
+ * @package MAHLManager
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Load plugin classes from a small explicit class map.
+ */
+class MAHL_Autoloader {
+
+	/**
+	 * Register the autoloader.
+	 *
+	 * @return void
+	 */
+	public static function register() {
+		spl_autoload_register( array( __CLASS__, 'autoload' ) );
+	}
+
+	/**
+	 * Load a matching class file.
+	 *
+	 * @param string $class_name Requested class name.
+	 * @return void
+	 */
+	public static function autoload( $class_name ) {
+		if ( 0 !== strpos( $class_name, 'MAHL_' ) ) {
+			return;
+		}
+
+		$class_map = self::get_class_map();
+
+		if ( isset( $class_map[ $class_name ] ) ) {
+			require_once MAHL_MANAGER_PATH . $class_map[ $class_name ];
+		}
+	}
+
+	/**
+	 * Return the supported class map.
+	 *
+	 * @return array<string, string>
+	 */
+	protected static function get_class_map() {
+		return array(
+			'MAHL_Plugin'               => 'includes/class-mahl-plugin.php',
+			'MAHL_Activator'            => 'includes/class-mahl-activator.php',
+			'MAHL_Deactivator'          => 'includes/class-mahl-deactivator.php',
+			'MAHL_Base_Post_Type'       => 'includes/post-types/class-mahl-base-post-type.php',
+			'MAHL_Season_Post_Type'     => 'includes/post-types/class-mahl-season-post-type.php',
+			'MAHL_Team_Post_Type'       => 'includes/post-types/class-mahl-team-post-type.php',
+			'MAHL_Player_Post_Type'     => 'includes/post-types/class-mahl-player-post-type.php',
+			'MAHL_Game_Post_Type'       => 'includes/post-types/class-mahl-game-post-type.php',
+			'MAHL_Base_Service'         => 'includes/services/class-mahl-base-service.php',
+			'MAHL_Season_Service'       => 'includes/services/class-mahl-season-service.php',
+			'MAHL_Team_Service'         => 'includes/services/class-mahl-team-service.php',
+			'MAHL_Game_Service'         => 'includes/services/class-mahl-game-service.php',
+			'MAHL_Standings_Service'    => 'includes/services/class-mahl-standings-service.php',
+			'MAHL_Player_Stats_Service' => 'includes/services/class-mahl-player-stats-service.php',
+			'MAHL_Admin'                => 'includes/admin/class-mahl-admin.php',
+			'MAHL_Frontend'             => 'includes/frontend/class-mahl-frontend.php',
+		);
+	}
+}
